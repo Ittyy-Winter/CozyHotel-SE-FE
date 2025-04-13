@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import getHotels from "@/libs/hotel/getHotels";
+import DateReserve from "./DateReserve"; // adjust the path if needed
+import dayjs, { Dayjs } from "dayjs";
 
 type Hotel = {
   name: string;
@@ -26,21 +28,26 @@ export default function HotelCatalog() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [checkinDate, setCheckinDate] = useState<Dayjs | null>(null);
+  const [checkoutDate, setCheckoutDate] = useState<Dayjs | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
   const itemsPerPage = 6;
 
   useEffect(() => {
-    fetchHotels();
+    if (hasSearched) {
+      fetchHotels();
+    }
   }, [currentPage]);
 
   const fetchHotels = async () => {
     try {
       setIsLoading(true);
-      const response = await getHotels(currentPage, itemsPerPage);
+      const response: HotelJson = await getHotels(currentPage, itemsPerPage);
       setHotels(response.data);
       setTotalItems(response.count);
     } catch (error) {
-      console.error('Error fetching hotels:', error);
+      console.error("Error fetching hotels:", error);
     } finally {
       setIsLoading(false);
     }
@@ -49,9 +56,12 @@ export default function HotelCatalog() {
   const HotelList = ({ hotels }: { hotels: Hotel[] }) => (
     <div className="space-y-8">
       {hotels.map((hotelItem) => (
-        <Link href={`/hotel/${hotelItem.id}`} key={hotelItem.id} className="group block">
+        <Link
+          href={`/hotel/${hotelItem.id}?checkin=${checkinDate?.format("YYYY-MM-DD")}&checkout=${checkoutDate?.format("YYYY-MM-DD")}`}
+          key={hotelItem.id}
+          className="group block"
+        >
           <div className="flex flex-col md:flex-row">
-            {/* Image container */}
             <div className="relative w-full md:w-[400px] h-[300px] md:h-[250px] overflow-hidden">
               <Image
                 src={hotelItem.picture}
@@ -60,12 +70,10 @@ export default function HotelCatalog() {
                 className="object-cover transition-transform duration-1000 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, 400px"
               />
-              {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-900/30 to-transparent 
                 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             </div>
 
-            {/* Content container */}
             <div className="flex-1 p-6 bg-[#1A1A1A] border border-[#333333] hover:border-[#C9A55C]/30 
               transition-all duration-500">
               <div>
@@ -80,8 +88,6 @@ export default function HotelCatalog() {
                   {hotelItem.description}
                 </p>
               </div>
-              
-              {/* Elegant button */}
               <div className="mt-6">
                 <span className="inline-flex items-center text-[#C9A55C] text-sm font-light tracking-[0.2em] uppercase
                   border-b border-transparent group-hover:border-[#C9A55C] transition-all duration-500">
@@ -99,40 +105,42 @@ export default function HotelCatalog() {
     </div>
   );
 
-  const Pagination = ({ totalItems, currentPage, onPageChange }: { 
-    totalItems: number; 
-    currentPage: number; 
+  const Pagination = ({
+    totalItems,
+    currentPage,
+    onPageChange,
+  }: {
+    totalItems: number;
+    currentPage: number;
     onPageChange: (page: number) => void;
   }) => {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    
     if (totalPages <= 1) return null;
 
     const getPageNumbers = () => {
       const pages = [];
       const maxVisiblePages = 5;
-      
+
       if (totalPages <= maxVisiblePages) {
-        for (let i = 1; i <= totalPages; i++) {
-          pages.push(i);
-        }
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
       } else {
         if (currentPage <= 3) {
           for (let i = 1; i <= 4; i++) pages.push(i);
-          pages.push(-1); // Ellipsis
+          pages.push(-1);
           pages.push(totalPages);
         } else if (currentPage >= totalPages - 2) {
           pages.push(1);
-          pages.push(-1); // Ellipsis
+          pages.push(-1);
           for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
         } else {
           pages.push(1);
-          pages.push(-1); // Ellipsis
+          pages.push(-1);
           for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
-          pages.push(-1); // Ellipsis
+          pages.push(-1);
           pages.push(totalPages);
         }
       }
+
       return pages;
     };
 
@@ -142,37 +150,39 @@ export default function HotelCatalog() {
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className={`px-4 py-2 rounded-lg font-serif text-sm
-            ${currentPage === 1 
-              ? 'bg-[#2A2A2A] text-gray-500 cursor-not-allowed' 
-              : 'bg-[#2A2A2A] text-[#C9A55C] hover:bg-[#333333] transition-colors'}`}
+            ${currentPage === 1
+              ? "bg-[#2A2A2A] text-gray-500 cursor-not-allowed"
+              : "bg-[#2A2A2A] text-[#C9A55C] hover:bg-[#333333] transition-colors"}`}
         >
           Previous
         </button>
-        
-        {getPageNumbers().map((pageNum, idx) => (
+
+        {getPageNumbers().map((pageNum, idx) =>
           pageNum === -1 ? (
-            <span key={`ellipsis-${idx}`} className="text-gray-500">...</span>
+            <span key={`ellipsis-${idx}`} className="text-gray-500">
+              ...
+            </span>
           ) : (
             <button
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
               className={`w-10 h-10 rounded-lg font-serif text-sm
                 ${currentPage === pageNum
-                  ? 'bg-[#C9A55C] text-white'
-                  : 'bg-[#2A2A2A] text-[#C9A55C] hover:bg-[#333333] transition-colors'}`}
+                  ? "bg-[#C9A55C] text-white"
+                  : "bg-[#2A2A2A] text-[#C9A55C] hover:bg-[#333333] transition-colors"}`}
             >
               {pageNum}
             </button>
           )
-        ))}
-        
+        )}
+
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === Math.ceil(totalItems / itemsPerPage)}
           className={`px-4 py-2 rounded-lg font-serif text-sm
             ${currentPage === Math.ceil(totalItems / itemsPerPage)
-              ? 'bg-[#2A2A2A] text-gray-500 cursor-not-allowed' 
-              : 'bg-[#2A2A2A] text-[#C9A55C] hover:bg-[#333333] transition-colors'}`}
+              ? "bg-[#2A2A2A] text-gray-500 cursor-not-allowed"
+              : "bg-[#2A2A2A] text-[#C9A55C] hover:bg-[#333333] transition-colors"}`}
         >
           Next
         </button>
@@ -183,7 +193,7 @@ export default function HotelCatalog() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
       <div className="luxury-section container mx-auto px-4 py-16">
-        <div className="text-center mb-20">
+        <div className="text-center mb-12">
           <h1 className="luxury-heading text-5xl tracking-[0.2em] uppercase mb-6">
             Our Collection
           </h1>
@@ -192,20 +202,49 @@ export default function HotelCatalog() {
             Curated Luxury Hotels for the Discerning Traveler
           </p>
         </div>
-        
+
+        {/* Date Picker Filters */}
+        <div className="mb-12 flex flex-col md:flex-row items-center justify-center gap-4">
+          <div className="w-full md:w-[250px]">
+            <DateReserve onDateChange={setCheckinDate} />
+          </div>
+          <div className="w-full md:w-[250px]">
+            <DateReserve
+              onDateChange={setCheckoutDate}
+              minDate={checkinDate || dayjs()}
+            />
+          </div>
+          <button
+            onClick={() => {
+              if (checkinDate && checkoutDate) {
+                setHasSearched(true);
+                setCurrentPage(1);
+                fetchHotels();
+              }
+            }}
+            className="bg-[#C9A55C] text-black px-6 py-2 rounded-md font-semibold hover:opacity-90 transition"
+          >
+            Search
+          </button>
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#C9A55C]"></div>
           </div>
-        ) : (
+        ) : hasSearched ? (
           <>
             <HotelList hotels={hotels} />
-            <Pagination 
+            <Pagination
               totalItems={totalItems}
               currentPage={currentPage}
               onPageChange={setCurrentPage}
             />
           </>
+        ) : (
+          <div className="text-center text-gray-400 italic mt-20">
+            Please select check-in and check-out dates to view hotels.
+          </div>
         )}
       </div>
     </div>
