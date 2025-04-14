@@ -1,16 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ["drive.google.com", "img5.pic.in.th", "img2.pic.in.th"],
+    domains: [
+      "drive.google.com",
+      "img5.pic.in.th",
+      "img2.pic.in.th",
+      "example.com" 
+    ],
   },
   async headers() {
     return [
       {
-        // matching all API routes
         source: "/venue/:path*",
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "*" }, // replace this your actual origin
+          { key: "Access-Control-Allow-Origin", value: "*" },
           {
             key: "Access-Control-Allow-Methods",
             value: "GET,DELETE,PATCH,POST,PUT",

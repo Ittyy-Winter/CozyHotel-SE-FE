@@ -4,6 +4,7 @@ export default async function createBooking(
     startDate: string;
     endDate: string;
     user: string;
+    roomType: string;
   },
   token: string
 ) {
@@ -12,29 +13,31 @@ export default async function createBooking(
   }
 
   const requestBody = {
+    hotel: hotelId,
     checkinDate: bookingData.startDate,
     checkoutDate: bookingData.endDate,
     user: bookingData.user,
+    roomType: bookingData.roomType,
   };
 
-  console.log(
-    "Request URL:",
-    `https://cozyhotel-be.vercel.app/api/v1/hotels/${hotelId}/bookings/`
-  );
+  const isDev = process.env.NODE_ENV === "development";
+
+  const requestUrl = isDev
+    ? `/api/proxy-hotel-booking/${hotelId}`
+    : `https://cozyhotel-be.vercel.app/api/v1/hotels/${hotelId}/bookings`;
+
+  console.log("Request URL:", requestUrl);
   console.log("Request Body:", requestBody);
   console.log("Token:", token);
 
-  const response = await fetch(
-    `https://cozyhotel-be.vercel.app/api/v1/hotels/${hotelId}/bookings/`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(requestBody),
-    }
-  );
+  const response = await fetch(requestUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(requestBody),
+  });
 
   if (!response.ok) {
     const errorData = await response.text();
@@ -43,11 +46,9 @@ export default async function createBooking(
 
     let errorMessage;
     try {
-      // Try to parse the error as JSON
       const errorJson = JSON.parse(errorData);
       errorMessage = errorJson.message || errorJson.error || errorData;
     } catch {
-      // If not JSON, use the raw error text
       errorMessage = errorData;
     }
 

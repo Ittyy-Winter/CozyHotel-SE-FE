@@ -257,6 +257,7 @@ export default function Reservations() {
             startDate: dayjs(pickupDate).format("YYYY-MM-DD"),
             endDate: dayjs(returnDate).format("YYYY-MM-DD"),
             user: session.user._id,
+            roomType: ""
           },
           session.user.token
         );

@@ -57,7 +57,7 @@ export default function HotelCatalog() {
     <div className="space-y-8">
       {hotels.map((hotelItem) => (
         <Link
-          href={`/hotel/${hotelItem.id}?checkin=${checkinDate?.format("YYYY-MM-DD")}&checkout=${checkoutDate?.format("YYYY-MM-DD")}`}
+          href={`roomtypes/hotel/${hotelItem.id}?checkin=${checkinDate?.format("YYYY-MM-DD")}&checkout=${checkoutDate?.format("YYYY-MM-DD")}`}
           key={hotelItem.id}
           className="group block"
         >
