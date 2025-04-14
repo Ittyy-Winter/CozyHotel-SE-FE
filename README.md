@@ -1,4 +1,4 @@
-Vercel link: https://cozy-hotel-fe.vercel.app/
+Vercel link: https://cozy-hotel-se-fe.vercel.app/
 
 Backend repo: https://github.com/Ittyy-Winter/CozyHotel-BE.git
 
