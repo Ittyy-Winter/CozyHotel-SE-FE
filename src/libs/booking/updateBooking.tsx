@@ -8,7 +8,7 @@ export default async function updateBooking(
     token: string,
     bookingData: UpdateBookingParams
 ) {
-    const response = await fetch(`https://cozyhotel-be.vercel.app/api/v1/bookings/${bookingId}`, {
+    const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/bookings/${bookingId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',

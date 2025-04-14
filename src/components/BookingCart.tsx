@@ -137,9 +137,9 @@ export default function ReservationCart() {
   };
 
   const filteredBookings = bookings.filter(booking => 
-    booking.hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (booking.user.name && booking.user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    booking.user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    booking.hotel?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (!session) {
@@ -214,7 +214,7 @@ export default function ReservationCart() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
                   <div>
                     <h2 className="text-2xl font-serif text-[#C9A55C] mb-2">
-                      {booking.hotel.name}
+                    {booking.hotel?.name || "Unknown Hotel"}
                     </h2>
                     <div className="text-gray-300 space-y-1">
                       {session.user.role === "admin" ? (
@@ -373,7 +373,7 @@ export default function ReservationCart() {
               <p className="text-gray-300">
                 Are you sure you want to delete your booking at{" "}
                 <span className="text-[#C9A55C]">
-                  {bookingToDelete.hotel.name}
+                {bookingToDelete.hotel?.name || "Unknown Hotel"}
                 </span>
                 ?
               </p>

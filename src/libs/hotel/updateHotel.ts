@@ -1,7 +1,7 @@
 import { HotelUpdate } from "@/types";
 
 export default async function editHotel(id: string, data: HotelUpdate, token: string) {
-  const response = await fetch(`https://cozyhotel-be.vercel.app/api/v1/hotels/${id}`, {
+  const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/hotels/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

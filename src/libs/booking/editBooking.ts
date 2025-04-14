@@ -9,7 +9,7 @@ export default async function editBooking(
   token: string
 ): Promise<Booking> {
   const response = await fetch(
-    `https://cozyhotel-be.vercel.app/api/v1/bookings/${bookingId}`,
+    `https://cozy-hotel-se-be.vercel.app/api/v1/bookings/${bookingId}`,
     {
       method: 'PUT',
       headers: {

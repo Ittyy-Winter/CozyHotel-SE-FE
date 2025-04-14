@@ -1,6 +1,6 @@
 export default async function getUser(userId: string) {
   const response = await fetch(
-    `https://cozyhotel-be.vercel.app/api/v1/accounts/${userId}`,
+    `https://cozy-hotel-se-be.vercel.app/api/v1/accounts/${userId}`,
     {
       method: "GET",
     }
