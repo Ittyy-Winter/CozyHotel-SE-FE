@@ -24,7 +24,7 @@ export default async function createBooking(
 
   const requestUrl = isDev
     ? `/api/proxy-hotel-booking/${hotelId}`
-    : `https://cozyhotel-be.vercel.app/api/v1/hotels/${hotelId}/bookings`;
+    : `https://cozy-hotel-se-be.vercel.app/api/v1/hotels/${hotelId}/bookings`;
 
   console.log("Request URL:", requestUrl);
   console.log("Request Body:", requestBody);
