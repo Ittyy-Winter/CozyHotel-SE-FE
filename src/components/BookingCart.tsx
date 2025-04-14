@@ -51,6 +51,7 @@ export default function ReservationCart() {
       if (session?.user?.token) {
         try {
           const response = await getBookings(session.user.token);
+          console.log("Fetched bookings:", response.data); // <--- add this
           setBookings(response.data);
         } catch (error) {
           console.error("Failed to fetch bookings:", error);
@@ -169,7 +170,8 @@ export default function ReservationCart() {
       </div>
     );
   }
-
+  console.log(bookings.length)
+  console.log(bookings)
   if (bookings.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
@@ -224,9 +226,9 @@ export default function ReservationCart() {
                       ) : null}
                       {session.user.role === "admin" ? (
                         <p>
-                          Booking owner: {booking.user.name || booking.user.email}{" "}
-                          ({booking.user.email})
+                        Booking owner: {booking.user?.name || booking.user?.email || "Unknown User"}{" "}({booking.user?.email || "No Email"})
                         </p>
+                        // null
                       ) : null}
                       <p>
                         Check-in:{" "}

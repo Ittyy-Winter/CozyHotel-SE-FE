@@ -38,7 +38,7 @@ export const API_ENDPOINTS = {
   BOOKINGS: {
     BASE: process.env.NODE_ENV === 'development'
       ? '/api/proxy-hotel-booking'
-      : `${API_BASE_URL}/api/v1/hotels`,
+      : `${API_BASE_URL}/api/v1/bookings`,
     BY_HOTEL: (hotelId: string) =>
       process.env.NODE_ENV === 'development'
         ? `/api/proxy-hotel-booking/${hotelId}`
