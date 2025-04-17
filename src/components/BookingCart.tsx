@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import getBookings from "@/libs/booking/getBookings";
@@ -7,6 +8,8 @@ import deleteBooking from "@/libs/booking/deleteBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import SearchBar from './SearchBar';
+import { API_ENDPOINTS } from "@/config/api";
+import { RoomType } from '@/types';
 
 interface Booking {
   _id: string;
@@ -36,6 +39,8 @@ export default function ReservationCart() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRoomType, setSelectedRoomType] = useState<RoomType | null>(null);
+  const [showRoomTypeModal, setShowRoomTypeModal] = useState(false);
 
   // Calculate duration of stay in days
   const calculateDuration = (checkinDate: string, checkoutDate: string) => {
@@ -137,7 +142,44 @@ export default function ReservationCart() {
     }
   };
 
-  const filteredBookings = bookings.filter(booking => 
+  const handleViewRoomType = async (bookingId: string) => {
+    if (!session?.user?.token) {
+      alert("Please sign in first.");
+      return;
+    }
+
+    try {
+      const bookingRes = await fetch(API_ENDPOINTS.BOOKINGS.BY_ID(bookingId), {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.user.token}`,
+        },
+      });
+
+      if (!bookingRes.ok) {
+        throw new Error(`HTTP error! status: ${bookingRes.status}`);
+      }
+
+      const bookingData = await bookingRes.json();
+      const roomTypeId = bookingData.data.roomType;
+
+      if (!roomTypeId) {
+        alert("Room Type information is missing for this booking.");
+        return;
+      }
+
+      const roomRes = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${roomTypeId}`);
+      const roomData = await roomRes.json();
+
+      setSelectedRoomType(roomData.data);
+      setShowRoomTypeModal(true);
+    } catch (error) {
+      console.error("Failed to fetch room type details", error);
+      alert("Failed to load room type information.");
+    }
+  };
+
+  const filteredBookings = bookings.filter(booking =>
     booking.hotel?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     booking.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     booking.user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -216,7 +258,7 @@ export default function ReservationCart() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
                   <div>
                     <h2 className="text-2xl font-serif text-[#C9A55C] mb-2">
-                    {booking.hotel?.name || "Unknown Hotel"}
+                      {booking.hotel?.name || "Unknown Hotel"}
                     </h2>
                     <div className="text-gray-300 space-y-1">
                       {session.user.role === "admin" ? (
@@ -226,7 +268,7 @@ export default function ReservationCart() {
                       ) : null}
                       {session.user.role === "admin" ? (
                         <p>
-                        Booking owner: {booking.user?.name || booking.user?.email || "Unknown User"}{" "}({booking.user?.email || "No Email"})
+                          Booking owner: {booking.user?.name || booking.user?.email || "Unknown User"}{" "}({booking.user?.email || "No Email"})
                         </p>
                         // null
                       ) : null}
@@ -250,6 +292,12 @@ export default function ReservationCart() {
                   </div>
 
                   <div className="flex space-x-4">
+                    <button
+                      onClick={() => handleViewRoomType(booking._id)}
+                      className="luxury-button"
+                    >
+                      View Room Type
+                    </button>
                     <button
                       onClick={() => handleEdit(booking)}
                       className="luxury-button"
@@ -375,7 +423,7 @@ export default function ReservationCart() {
               <p className="text-gray-300">
                 Are you sure you want to delete your booking at{" "}
                 <span className="text-[#C9A55C]">
-                {bookingToDelete.hotel?.name || "Unknown Hotel"}
+                  {bookingToDelete.hotel?.name || "Unknown Hotel"}
                 </span>
                 ?
               </p>
@@ -413,6 +461,73 @@ export default function ReservationCart() {
                 disabled={deleteLoading === bookingToDelete._id}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRoomTypeModal && selectedRoomType && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-[#1A1A1A] p-8 rounded-lg w-full max-w-3xl border border-[#C9A55C]/30 overflow-y-auto max-h-[90vh]">
+            <button
+              onClick={() => setShowRoomTypeModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-[#C9A55C]"
+            >
+              ✕
+            </button>
+            {selectedRoomType.images && selectedRoomType.images.length > 0 && (
+              <div className="relative w-full h-64 mb-6">
+                <Image
+                  src={selectedRoomType.images[0]}
+                  alt={selectedRoomType.name}
+                  fill
+                  className="object-cover rounded-lg"
+                />
+              </div>
+            )}
+
+            <h2 className="text-3xl font-serif text-[#C9A55C] mb-4">{selectedRoomType.name}</h2>
+            <p className="text-gray-300 mb-4">{selectedRoomType.description}</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-gray-400">Max Guests: {selectedRoomType.capacity}</p>
+                <p className="text-gray-400">Bed Type: {selectedRoomType.bedType}</p>
+                <p className="text-gray-400">Room Size: {selectedRoomType.size}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 font-semibold">Base Price:</p>
+                <p className="text-white text-xl">
+                  ฿{selectedRoomType.basePrice.toLocaleString()} {selectedRoomType.currency}
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-white font-semibold">Amenities:</p>
+              <ul className="flex flex-wrap gap-2 mt-1 text-sm text-gray-300">
+                {selectedRoomType.amenities.map((item: string, idx: number) => (
+                  <li key={idx} className="px-2 py-1 bg-gray-800 rounded">{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-white font-semibold">Facilities:</p>
+              <ul className="flex flex-wrap gap-2 mt-1 text-sm text-gray-300">
+                {selectedRoomType.facilities.map((item: string, idx: number) => (
+                  <li key={idx} className="px-2 py-1 bg-gray-800 rounded">{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex mt-8">
+              <button
+                onClick={() => setShowRoomTypeModal(false)}
+                className="px-6 py-2 bg-[#C9A55C] text-white rounded-full font-semibold hover:opacity-90 transition-all duration-300"
+              >
+                OK
               </button>
             </div>
           </div>

@@ -60,5 +60,9 @@ export const API_ENDPOINTS = {
       process.env.NODE_ENV === "development"
         ? `/api/proxy-hotel-booking/${hotelId}`
         : `${API_BASE_URL}/api/v1/hotels/${hotelId}/bookings`,
+    BY_ID: (bookingId: string) =>
+      process.env.NODE_ENV === "development"
+        ? `/api/proxy-booking/${bookingId}`
+        : `${API_BASE_URL}/api/v1/bookings/${bookingId}`,
   },
 };
