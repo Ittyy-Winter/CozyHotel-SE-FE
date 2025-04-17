@@ -64,3 +64,19 @@ export interface HotelUpdate {
   picture: string;
   description: string;
 }
+
+export interface RoomTypeFormData {
+  name: string;
+  description: string;
+  capacity: number;
+  bedType: string;
+  size: string;
+  amenities: string[];
+  facilities: string[];
+  images: string[];
+  basePrice: number;
+  currency: string;
+  totalRooms: number;
+  nonAvailableRooms: number;
+  isAvailable: boolean;
+}
