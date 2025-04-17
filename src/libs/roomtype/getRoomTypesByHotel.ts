@@ -15,6 +15,10 @@ export default async function getRoomTypesByHotel(hotelId: string, token: string
     }
   );
 
+  if (response.status === 404) {
+    return { data: [], count: 0 };
+  }
+
   if (!response.ok) {
     throw new Error('Failed to fetch room type');
   }

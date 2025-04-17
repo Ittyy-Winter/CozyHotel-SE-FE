@@ -295,18 +295,25 @@ export default function HotelManagement() {
     setBookingsLoading(true);
     setSelectedHotel(hotels.find(h => h._id === hotelId) || null);
     try {
-      // Fetch all room type for searching
       const allBookingsResponse = await getRoomTypesByHotel(hotelId, session.user.token, 1, 1000);
       setAllBookings(allBookingsResponse.data);
 
-      // Fetch paginated room type for display
       const response = await getRoomTypesByHotel(hotelId, session.user.token, bookingPage, bookingsPerPage);
-      setSelectedRoomType(response.data);
-      setTotalBookings(response.count);
+
+      if (response.data.length === 0) {
+        setSelectedRoomType([]);
+        setTotalBookings(0);
+      } else {
+        setSelectedRoomType(response.data);
+        setTotalBookings(response.count);
+      }
+
       setIsViewingRoomType(true);
     } catch (error) {
       console.error('Error fetching hotel bookings:', error);
       console.log('Failed to fetch bookings');
+      setSelectedRoomType([]);
+      setTotalBookings(0);
       setIsViewingRoomType(true);
     } finally {
       setBookingsLoading(false);
@@ -1798,7 +1805,7 @@ export default function HotelManagement() {
 
               {/* Size */}
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Size</label>
+                <label className="block mb-1 text-sm text-gray-400">Room Size</label>
                 <input
                   type="text"
                   className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
@@ -1808,28 +1815,37 @@ export default function HotelManagement() {
               </div>
 
               {/* BasePrice + TotalRooms + NonAvailableRooms */}
-              <div className="grid grid-cols-3 gap-4">
-                <input
-                  type="number"
-                  className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
-                  placeholder="Base Price"
-                  value={roomTypeEditingFormData.basePrice}
-                  onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, basePrice: parseNumberInput(e.target.value) })}
-                />
-                <input
-                  type="number"
-                  className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
-                  placeholder="Total Rooms"
-                  value={roomTypeEditingFormData.totalRooms}
-                  onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, totalRooms: parseNumberInput(e.target.value) })}
-                />
-                <input
-                  type="number"
-                  className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
-                  placeholder="Non Available"
-                  value={roomTypeEditingFormData.nonAvailableRooms}
-                  onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, nonAvailableRooms: parseNumberInput(e.target.value) })}
-                />
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-1 text-sm text-gray-400">Base Price (THB)</label>
+                  <input
+                    type="number"
+                    className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
+                    placeholder="Base Price"
+                    value={roomTypeEditingFormData.basePrice}
+                    onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, basePrice: parseNumberInput(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-sm text-gray-400">Total Rooms</label>
+                  <input
+                    type="number"
+                    className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
+                    placeholder="Total Rooms"
+                    value={roomTypeEditingFormData.totalRooms}
+                    onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, totalRooms: parseNumberInput(e.target.value) })}
+                  />
+                  <div>
+                    <label className="block mb-1 text-sm text-gray-400">Non Available</label>
+                    <input
+                      type="number"
+                      className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
+                      placeholder="Non Available"
+                      value={roomTypeEditingFormData.nonAvailableRooms}
+                      onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, nonAvailableRooms: parseNumberInput(e.target.value) })}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Is Available */}
