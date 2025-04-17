@@ -36,6 +36,9 @@ export const API_ENDPOINTS = {
         ? `/api/proxy-hotel-booking/${hotelId}`
         : `${API_BASE_URL}/api/v1/hotels/${hotelId}/bookings`,
   },
+  ROOMTYPE: {
+    BY_ID: (id: string) => `${API_BASE_URL}/api/proxy-roomtype/${id}`,
+  },
   // Accounts
   ACCOUNTS: {
     BASE:

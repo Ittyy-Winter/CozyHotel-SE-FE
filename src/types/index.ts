@@ -28,6 +28,27 @@ export interface Booking {
   createdAt: Date;
 }
 
+export interface RoomType {
+  _id: string;
+  hotelId: string;
+  name: string;
+  description: string;
+  capacity: number;
+  bedType: string;
+  size: string;
+  amenities: string[];
+  facilities: string[];
+  images: string[];
+  basePrice: number;
+  currency: string;
+  totalRooms: number;
+  nonAvailableRooms: number;
+  isAvailable: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  __v: number;
+}
+
 export interface BookingUpdate {
   checkinDate?: Date | string;
   checkoutDate?: Date | string;

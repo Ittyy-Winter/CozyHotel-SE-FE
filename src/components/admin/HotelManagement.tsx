@@ -7,8 +7,11 @@ import createHotel from '@/libs/hotel/createHotel';
 import editHotel from '@/libs/hotel/updateHotel';
 import deleteHotel from '@/libs/hotel/deleteHotel';
 import getBookingsByHotel from '@/libs/booking/getBookingsByHotel';
+import getRoomTypesByHotel from '@/libs/roomtype/getRoomTypesByHotel'
+// import deactivateRoomType from '@/libs/roomtype/deactivateRoomType';
+// import deleteRoomType from '@/libs/roomtype/deleteRoomType';
 import editBooking from '@/libs/booking/editBooking';
-import { Hotel, HotelUpdate, Booking } from '@/types';
+import { Hotel, HotelUpdate, Booking, RoomType } from '@/types';
 import LoadingSpinner from './LoadingSpinner';
 import SearchBar from '../SearchBar';
 
@@ -30,6 +33,7 @@ export default function HotelManagement() {
   });
   const [isViewingBookings, setIsViewingBookings] = useState(false);
   const [selectedHotelBookings, setSelectedHotelBookings] = useState<Booking[]>([]);
+  const [selectedRoomType, setSelectedRoomType] = useState<RoomType[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [editState, setEditState] = useState<{
     isEditing: boolean;
@@ -76,6 +80,22 @@ export default function HotelManagement() {
 
   {/* Room Type */ }
   const [isViewingRoomType, setIsViewingRoomType] = useState(false);
+  const [isAddingRoomType, setIsAddingRoomType] = useState(false);
+  const [roomTypeFormData, setRoomTypeFormData] = useState({
+    name: '',
+    description: '',
+    capacity: 1,
+    bedType: '',
+    size: '',
+    amenities: [],
+    facilities: [],
+    images: [],
+    basePrice: 0,
+    currency: 'THB',
+    totalRooms: 0,
+    nonAvailableRooms: 0,
+    isAvailable: true,
+  });
 
   const validateForm = (data: typeof formData) => {
     if (data.name.length > 50) {
@@ -273,13 +293,13 @@ export default function HotelManagement() {
     setBookingsLoading(true);
     setSelectedHotel(hotels.find(h => h._id === hotelId) || null);
     try {
-      // Fetch all bookings for searching
-      const allBookingsResponse = await getBookingsByHotel(hotelId, session.user.token, 1, 1000);
+      // Fetch all room type for searching
+      const allBookingsResponse = await getRoomTypesByHotel(hotelId, session.user.token, 1, 1000);
       setAllBookings(allBookingsResponse.data);
 
-      // Fetch paginated bookings for display
-      const response = await getBookingsByHotel(hotelId, session.user.token, bookingPage, bookingsPerPage);
-      setSelectedHotelBookings(response.data);
+      // Fetch paginated room type for display
+      const response = await getRoomTypesByHotel(hotelId, session.user.token, bookingPage, bookingsPerPage);
+      setSelectedRoomType(response.data);
       setTotalBookings(response.count);
       setIsViewingRoomType(true);
     } catch (error) {
@@ -351,6 +371,14 @@ export default function HotelManagement() {
     })
     : selectedHotelBookings;
 
+  const filteredRoomType = (searchTerm)
+    ? selectedRoomType.filter((room) => {
+      const matchesSearchTerm = room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        room.description.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearchTerm;
+    })
+    : selectedRoomType;
+
   const handleCloseModal = () => {
     setIsViewingBookings(false);
     setSelectedHotel(null);
@@ -358,6 +386,89 @@ export default function HotelManagement() {
     setBookingPage(1);
     setTotalBookings(0);
     clearSearchFields();
+  };
+
+  const handleSubmitRoomType = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session?.user?.token || !selectedHotel) return;
+
+    const payload = {
+      "hotelId": "67e025ccf02ff00b0bd2514c",
+      "name": "Deluxe King Room2",
+      "description": "Spacious room with king bed, private balcony, and city view.",
+      "capacity": 2,
+      "bedType": "King",
+      "size": "45 sqm",
+      "amenities": [
+        "Flat-screen TV",
+        "Mini Bar",
+        "Coffee/tea maker",
+        "Air conditioning",
+        "Safe"
+      ],
+      "facilities": [
+        "Free Wi-Fi",
+        "Swimming pool",
+        "Private bathroom",
+        "Air conditioning",
+        "Television",
+        "Mini-bar"
+      ],
+      "images": [
+        "https://example.com/room1.jpg",
+        "https://example.com/room2.jpg"
+      ],
+      "basePrice": 3200,
+      "currency": "THB",
+      "totalRooms": 15,
+      "nonAvailableRooms": 3,
+      "isAvailable": true
+    };
+
+    console.log('Payload ส่งไปจริง:', payload);
+
+    try {
+      const response = await fetch('https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.user.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Server response error:', errorData);
+        throw new Error('Failed to create room type');
+      }
+
+      const updatedRoomTypes = await getRoomTypesByHotel(selectedHotel._id, session.user.token, 1, 1000);
+      setSelectedRoomType(updatedRoomTypes.data);
+      setAllBookings(updatedRoomTypes.data);
+
+      setIsAddingRoomType(false);
+      setRoomTypeFormData({
+        name: '',
+        description: '',
+        capacity: 1,
+        bedType: '',
+        size: '',
+        amenities: [],
+        facilities: [],
+        images: [],
+        basePrice: 0,
+        currency: 'THB',
+        totalRooms: 0,
+        nonAvailableRooms: 0,
+        isAvailable: true,
+      });
+
+      alert('Room type created successfully');
+    } catch (error) {
+      console.error('Error creating room type:', error);
+      alert('Failed to create room type');
+    }
   };
 
   const Pagination = ({ totalItems, currentPage, onPageChange }: {
@@ -552,6 +663,25 @@ export default function HotelManagement() {
     setBookingFormData({
       checkinDate: '',
       checkoutDate: '',
+    });
+  };
+
+  const handleCancelAddRoomType = () => {
+    setIsAddingRoomType(false);
+    setRoomTypeFormData({
+      name: '',
+      description: '',
+      capacity: 1,
+      bedType: '',
+      size: '',
+      amenities: [],
+      facilities: [],
+      images: [],
+      basePrice: 0,
+      currency: 'THB',
+      totalRooms: 0,
+      nonAvailableRooms: 0,
+      isAvailable: true,
     });
   };
 
@@ -1066,7 +1196,7 @@ export default function HotelManagement() {
                 Room type of {selectedHotel?.name}
               </h3>
               <button
-                onClick={() => setIsViewingRoomType(false)}
+                onClick={() => setIsAddingRoomType(true)}
                 className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
                               hover:bg-[#C9A55C] hover:text-white transition-colors"
               >
@@ -1084,7 +1214,7 @@ export default function HotelManagement() {
             <div className="mb-6 space-y-4">
               <SearchBar
                 onSearch={setSearchTerm}
-                placeholder="Search room type by name"
+                placeholder="Search room types by name or description..."
               />
               {/* <div className="flex gap-4">
                 <input
@@ -1111,49 +1241,64 @@ export default function HotelManagement() {
 
             {/* Room Type List */}
             <div className="space-y-4">
-              {filteredBookings.length === 0 ? (
+              {filteredRoomType.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-300">
-                    {searchTerm || searchDateRange.start || searchDateRange.end || searchBookingId
-                      ? 'No bookings found matching your search.'
-                      : 'No bookings found.'}
+                    {searchTerm
+                      ? 'No room types found matching your search.'
+                      : 'No room types found.'}
                   </p>
                 </div>
               ) : (
-                filteredBookings.map((booking) => (
-                  <div key={booking._id} className="border border-[#333333] rounded-lg p-4 bg-[#1A1A1A] hover:bg-[#2A2A2A] transition-colors">
+                filteredRoomType.map((room) => (
+                  <div key={room._id} className="border border-[#333333] rounded-lg p-4 bg-[#1A1A1A] hover:bg-[#2A2A2A] transition-colors">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-white font-medium">
-                          {typeof booking.user === 'object' ? booking.user.name : 'Loading...'}
+                        <p className="text-white font-medium text-lg">{room.name}</p>
+                        <p className="text-gray-400 text-sm">{room.description}</p>
+                        <p className="text-gray-400 text-sm">Capacity: {room.capacity} people</p>
+                        <p className="text-gray-400 text-sm">Bed Type: {room.bedType}</p>
+                        <p className="text-gray-400 text-sm">Price: {room.basePrice} {room.currency}</p>
+                        <p className="text-gray-400 text-sm">
+                          Amenities: {room.amenities.join(', ')}
                         </p>
-                        <p className="text-gray-400">
-                          Check-in: {new Date(booking.checkinDate).toLocaleDateString()}
+                        <p className="text-gray-400 text-sm">
+                          Facilities: {room.facilities.join(', ')}
                         </p>
-                        <p className="text-gray-400">
-                          Check-out: {new Date(booking.checkoutDate).toLocaleDateString()}
+                        <p className="text-gray-400 text-sm">
+                          Available: {room.isAvailable ? 'Yes' : 'No'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-[#C9A55C]">Booking ID: {booking._id}</p>
+                        <p className="text-xs text-[#C9A55C]">Room Type ID: {room._id}</p>
                         <p className="text-xs text-gray-500">
-                          Created: {new Date(booking.createdAt).toLocaleString()}
+                          Created: {new Date(room.createdAt).toLocaleString()}
                         </p>
                         <div className="mt-2 space-x-2">
                           <button
-                            onClick={() => handleEditBooking(booking)}
+                            // onClick={() => handleEditRoomType(room)}
                             className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
                               hover:bg-[#C9A55C] hover:text-white transition-colors"
                           >
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteBooking(booking._id)}
-                            disabled={isDeletingBooking}
+                            // onClick={() => handleDeactivate(room._id)}
+                            // disabled={isDeactivate}
                             className="px-3 py-1 bg-red-900/20 text-red-500 border border-red-500 rounded 
                               hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
                           >
-                            {isDeletingBooking ? 'Deleting...' : 'Delete'}
+                            Deactivate
+                            {/* {isDeactivate ? 'Deactivating...' : 'Deactivate'} */}
+                          </button>
+                          <button
+                            // onClick={() => handleDeleteRoomType(room._id)}
+                            // disabled={isDeletingBooking}
+                            className="px-3 py-1 bg-red-900/20 text-red-500 border border-red-500 rounded 
+                              hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
+                          >
+                            Delete
+                            {/* {isDeletingBooking ? 'Deleting...' : 'Delete'} */}
                           </button>
                         </div>
                       </div>
@@ -1164,7 +1309,7 @@ export default function HotelManagement() {
             </div>
 
             {/* Only show pagination if there are bookings and we're not searching */}
-            {filteredBookings.length > 0 && !searchTerm && !searchDateRange.start && !searchDateRange.end && !searchBookingId && (
+            {filteredRoomType.length > 0 && !searchTerm && !searchDateRange.start && !searchDateRange.end && !searchBookingId && (
               <Pagination
                 totalItems={totalBookings}
                 currentPage={bookingPage}
@@ -1174,6 +1319,209 @@ export default function HotelManagement() {
           </div>
         </div>
       )}
+
+      {isAddingRoomType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="w-full max-w-md sm:max-w-lg md:max-w-2xl overflow-y-auto max-h-screen bg-[#1A1A1A] rounded-lg p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-xl font-serif text-[#C9A55C]">Add Room Type</h3>
+              <button
+                onClick={handleCancelAddRoomType}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateBooking} className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+
+                {/* Room Type Name */}
+                <div>
+                  <label className="block mb-1 text-sm text-gray-400">Room Type Name</label>
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    maxLength={50}
+                    required
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block mb-1 text-sm text-gray-400">Description</label>
+                  <textarea
+                    placeholder="Description"
+                    className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    required
+                  />
+                </div>
+
+                {/* Capacity + Bed Type */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1 text-sm text-gray-400">Capacity</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                      value={formData.capacity}
+                      onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-1 text-sm text-gray-400">Bed Type</label>
+                    <input
+                      type="text"
+                      placeholder="King, Queen, Twin"
+                      className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                      value={formData.bedType}
+                      onChange={(e) => setFormData({ ...formData, bedType: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Room Size */}
+                <div>
+                  <label className="block mb-1 text-sm text-gray-400">Room Size</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 40 sqm"
+                    className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                    value={formData.size}
+                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                    required
+                  />
+                </div>
+
+                {/* Base Price + Total Rooms + Non Available Rooms */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block mb-1 text-sm text-gray-400">Base Price (THB)</label>
+                    <input
+                      type="number"
+                      className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                      value={formData.basePrice}
+                      onChange={(e) => setFormData({ ...formData, basePrice: parseFloat(e.target.value) })}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-1 text-sm text-gray-400">Total Rooms</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                      value={formData.totalRooms}
+                      onChange={(e) => setFormData({ ...formData, totalRooms: parseInt(e.target.value) })}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-1 text-sm text-gray-400">Non Available</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                      value={formData.nonAvailableRooms}
+                      onChange={(e) => setFormData({ ...formData, nonAvailableRooms: parseInt(e.target.value) })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Is Available */}
+                <div>
+                  <label className="block mb-1 text-sm text-gray-400">Is Available</label>
+                  <select
+                    className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white focus:border-[#C9A55C] focus:outline-none"
+                    value={formData.isAvailable ? "true" : "false"}
+                    onChange={(e) => setFormData({ ...formData, isAvailable: e.target.value === "true" })}
+                  >
+                    <option value="true">Available</option>
+                    <option value="false">Not Available</option>
+                  </select>
+                </div>
+
+                {/* Amenities */}
+                <div>
+                  <label className="block mb-1 text-sm text-gray-400">Amenities (comma separated)</label>
+                  <input
+                    type="text"
+                    placeholder="Free Wi-Fi, Air conditioning"
+                    className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                    value={formData.amenities?.join(', ') || ''}
+                    onChange={(e) => setFormData({ ...formData, amenities: e.target.value.split(',').map(x => x.trim()) })}
+                  />
+                </div>
+
+                {/* Facilities */}
+                <div>
+                  <label className="block mb-1 text-sm text-gray-400">Facilities (comma separated)</label>
+                  <input
+                    type="text"
+                    placeholder="Swimming pool, Private bathroom"
+                    className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                    value={formData.facilities?.join(', ') || ''}
+                    onChange={(e) => setFormData({ ...formData, facilities: e.target.value.split(',').map(x => x.trim()) })}
+                  />
+                </div>
+
+                {/* Images */}
+                <div>
+                  <label className="block mb-1 text-sm text-gray-400">Images (comma separated URLs)</label>
+                  <input
+                    type="text"
+                    placeholder="https://..., https://..."
+                    className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
+                    value={formData.images?.join(', ') || ''}
+                    onChange={(e) => setFormData({ ...formData, images: e.target.value.split(',').map(x => x.trim()) })}
+                  />
+                </div>
+
+              </div>
+
+              {/* Button */}
+              <div className="mt-6 flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={handleCancelAddRoomType}
+                  className="rounded border border-[#C9A55C] bg-[#2A2A2A] px-4 py-2 text-[#C9A55C] transition-colors hover:bg-[#C9A55C] hover:text-white disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitRoomType}
+                  type="submit"
+                  // disabled={isUpdatingBooking}
+                  className="flex items-center space-x-2 rounded bg-[#C9A55C] px-4 py-2 text-white transition-colors hover:bg-[#B38B4A] disabled:opacity-50"
+                >
+                  {isUpdatingBooking ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-t-2 border-b-2 border-white"></div>
+                      <span>Adding...</span>
+                    </>
+                  ) : (
+                    "Add Room type"
+                  )}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
