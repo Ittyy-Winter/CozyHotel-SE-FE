@@ -40,7 +40,7 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) =>
        process.env.NODE_ENV === "development"
       ? `/api/proxy-roomtype/${id}`
-      : `${API_BASE_URL}/api/v1/roomtypes/${id}`,
+      : `${API_BASE_URL}/api/v1/roomtypes/hotel/${id}`,
   },
   // Accounts
   ACCOUNTS: {
