@@ -439,7 +439,7 @@ export default function HotelManagement() {
     
     setIsDeletingBooking(true);
     try {
-      await fetch(`https://cozyhotel-be.vercel.app/api/v1/bookings/${bookingToDelete._id}`, {
+      await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/bookings/${bookingToDelete._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.user.token}`,
@@ -696,6 +696,13 @@ export default function HotelManagement() {
                     hover:bg-[#C9A55C] hover:text-white transition-colors"
                 >
                   View Bookings
+                </button>
+                <button
+                  onClick={() => handleViewBookings(hotel._id)}
+                  className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
+                    hover:bg-[#C9A55C] hover:text-white transition-colors"
+                >
+                  View Room Type
                 </button>
                 <button
                   onClick={() => handleEdit(hotel)}
