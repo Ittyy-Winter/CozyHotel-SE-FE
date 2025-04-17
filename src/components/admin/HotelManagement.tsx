@@ -74,6 +74,9 @@ export default function HotelManagement() {
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [showHotelSuccessMessage, setShowHotelSuccessMessage] = useState(false);
 
+  {/* Room Type */ }
+  const [isViewingRoomType, setIsViewingRoomType] = useState(false);
+
   const validateForm = (data: typeof formData) => {
     if (data.name.length > 50) {
       alert('Name cannot be more than 50 characters');
@@ -251,12 +254,34 @@ export default function HotelManagement() {
       // Fetch all bookings for searching
       const allBookingsResponse = await getBookingsByHotel(hotelId, session.user.token, 1, 1000);
       setAllBookings(allBookingsResponse.data);
-      
+
       // Fetch paginated bookings for display
       const response = await getBookingsByHotel(hotelId, session.user.token, bookingPage, bookingsPerPage);
       setSelectedHotelBookings(response.data);
       setTotalBookings(response.count);
       setIsViewingBookings(true);
+    } catch (error) {
+      console.error('Error fetching hotel bookings:', error);
+      alert('Failed to fetch bookings');
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  const handleViewRoomType = async (hotelId: string) => {
+    if (!session?.user?.token) return;
+    setBookingsLoading(true);
+    setSelectedHotel(hotels.find(h => h._id === hotelId) || null);
+    try {
+      // Fetch all bookings for searching
+      const allBookingsResponse = await getBookingsByHotel(hotelId, session.user.token, 1, 1000);
+      setAllBookings(allBookingsResponse.data);
+
+      // Fetch paginated bookings for display
+      const response = await getBookingsByHotel(hotelId, session.user.token, bookingPage, bookingsPerPage);
+      setSelectedHotelBookings(response.data);
+      setTotalBookings(response.count);
+      setIsViewingRoomType(true);
     } catch (error) {
       console.error('Error fetching hotel bookings:', error);
       alert('Failed to fetch bookings');
@@ -311,19 +336,19 @@ export default function HotelManagement() {
 
   const filteredBookings = searchTerm || searchDateRange.start || searchDateRange.end || searchBookingId
     ? allBookings.filter(booking => {
-        const user = booking.user;
-        const matchesSearchTerm = !searchTerm || 
-          (typeof user === 'object' && user !== null && 'name' in user && user.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (typeof user === 'object' && user !== null && 'email' in user && user.email?.toLowerCase().includes(searchTerm.toLowerCase()));
-        
-        const matchesDateRange = (!searchDateRange.start || new Date(booking.checkinDate) >= new Date(searchDateRange.start)) &&
-          (!searchDateRange.end || new Date(booking.checkoutDate) <= new Date(searchDateRange.end));
-        
-        const matchesBookingId = !searchBookingId || 
-          booking._id.toLowerCase().includes(searchBookingId.toLowerCase());
+      const user = booking.user;
+      const matchesSearchTerm = !searchTerm ||
+        (typeof user === 'object' && user !== null && 'name' in user && user.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (typeof user === 'object' && user !== null && 'email' in user && user.email?.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        return matchesSearchTerm && matchesDateRange && matchesBookingId;
-      })
+      const matchesDateRange = (!searchDateRange.start || new Date(booking.checkinDate) >= new Date(searchDateRange.start)) &&
+        (!searchDateRange.end || new Date(booking.checkoutDate) <= new Date(searchDateRange.end));
+
+      const matchesBookingId = !searchBookingId ||
+        booking._id.toLowerCase().includes(searchBookingId.toLowerCase());
+
+      return matchesSearchTerm && matchesDateRange && matchesBookingId;
+    })
     : selectedHotelBookings;
 
   const handleCloseModal = () => {
@@ -335,19 +360,19 @@ export default function HotelManagement() {
     clearSearchFields();
   };
 
-  const Pagination = ({ totalItems, currentPage, onPageChange }: { 
-    totalItems: number; 
-    currentPage: number; 
+  const Pagination = ({ totalItems, currentPage, onPageChange }: {
+    totalItems: number;
+    currentPage: number;
     onPageChange: (page: number) => void;
   }) => {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    
+
     if (totalPages <= 1) return null;
 
     const getPageNumbers = () => {
       const pages = [];
       const maxVisiblePages = 5;
-      
+
       if (totalPages <= maxVisiblePages) {
         for (let i = 1; i <= totalPages; i++) {
           pages.push(i);
@@ -378,13 +403,13 @@ export default function HotelManagement() {
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className={`px-4 py-2 rounded-lg font-serif text-sm
-            ${currentPage === 1 
-              ? 'bg-[#2A2A2A] text-gray-500 cursor-not-allowed' 
+            ${currentPage === 1
+              ? 'bg-[#2A2A2A] text-gray-500 cursor-not-allowed'
               : 'bg-[#2A2A2A] text-[#C9A55C] hover:bg-[#333333] transition-colors'}`}
         >
           Previous
         </button>
-        
+
         {getPageNumbers().map((pageNum, idx) => (
           pageNum === -1 ? (
             <span key={`ellipsis-${idx}`} className="text-gray-500">...</span>
@@ -401,13 +426,13 @@ export default function HotelManagement() {
             </button>
           )
         ))}
-        
+
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === Math.ceil(totalItems / itemsPerPage)}
           className={`px-4 py-2 rounded-lg font-serif text-sm
             ${currentPage === Math.ceil(totalItems / itemsPerPage)
-              ? 'bg-[#2A2A2A] text-gray-500 cursor-not-allowed' 
+              ? 'bg-[#2A2A2A] text-gray-500 cursor-not-allowed'
               : 'bg-[#2A2A2A] text-[#C9A55C] hover:bg-[#333333] transition-colors'}`}
         >
           Next
@@ -417,12 +442,12 @@ export default function HotelManagement() {
   };
 
   const filteredHotels = hotelSearchTerm
-    ? allHotels.filter(hotel => 
-        hotel.name.toLowerCase().includes(hotelSearchTerm.toLowerCase()) ||
-        hotel.address.toLowerCase().includes(hotelSearchTerm.toLowerCase()) ||
-        hotel.district.toLowerCase().includes(hotelSearchTerm.toLowerCase()) ||
-        hotel.province.toLowerCase().includes(hotelSearchTerm.toLowerCase())
-      )
+    ? allHotels.filter(hotel =>
+      hotel.name.toLowerCase().includes(hotelSearchTerm.toLowerCase()) ||
+      hotel.address.toLowerCase().includes(hotelSearchTerm.toLowerCase()) ||
+      hotel.district.toLowerCase().includes(hotelSearchTerm.toLowerCase()) ||
+      hotel.province.toLowerCase().includes(hotelSearchTerm.toLowerCase())
+    )
     : hotels;
 
   const handleDeleteBooking = async (bookingId: string) => {
@@ -436,7 +461,7 @@ export default function HotelManagement() {
 
   const confirmDeleteBooking = async () => {
     if (!session?.user?.token || !selectedHotel || !bookingToDelete) return;
-    
+
     setIsDeletingBooking(true);
     try {
       await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/bookings/${bookingToDelete._id}`, {
@@ -446,12 +471,12 @@ export default function HotelManagement() {
           'Content-Type': 'application/json',
         },
       });
-      
+
       // Refresh bookings after deletion
       const response = await getBookingsByHotel(selectedHotel._id, session.user.token, bookingPage, bookingsPerPage);
       setSelectedHotelBookings(response.data);
       setTotalBookings(response.count);
-      
+
       // Also refresh all bookings for search
       const allBookingsResponse = await getBookingsByHotel(selectedHotel._id, session.user.token, 1, 1000);
       setAllBookings(allBookingsResponse.data);
@@ -497,7 +522,7 @@ export default function HotelManagement() {
       const response = await getBookingsByHotel(selectedHotel._id, session.user.token, bookingPage, bookingsPerPage);
       setSelectedHotelBookings(response.data);
       setTotalBookings(response.count);
-      
+
       // Also refresh all bookings for search
       const allBookingsResponse = await getBookingsByHotel(selectedHotel._id, session.user.token, 1, 1000);
       setAllBookings(allBookingsResponse.data);
@@ -585,7 +610,7 @@ export default function HotelManagement() {
                 ✕
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <p className="text-gray-300">
                 Are you sure you want to delete this booking?
@@ -698,7 +723,7 @@ export default function HotelManagement() {
                   View Bookings
                 </button>
                 <button
-                  onClick={() => handleViewBookings(hotel._id)}
+                  onClick={() => handleViewRoomType(hotel._id)}
                   className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
                     hover:bg-[#C9A55C] hover:text-white transition-colors"
                 >
@@ -726,7 +751,7 @@ export default function HotelManagement() {
 
       {/* Only show pagination if there are hotels and we're not searching */}
       {filteredHotels.length > 0 && !hotelSearchTerm && (
-        <Pagination 
+        <Pagination
           totalItems={totalItems}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
@@ -834,7 +859,7 @@ export default function HotelManagement() {
 
             {/* Only show pagination if there are bookings and we're not searching */}
             {filteredBookings.length > 0 && !searchTerm && !searchDateRange.start && !searchDateRange.end && !searchBookingId && (
-              <Pagination 
+              <Pagination
                 totalItems={totalBookings}
                 currentPage={bookingPage}
                 onPageChange={handleBookingPageChange}
@@ -929,7 +954,7 @@ export default function HotelManagement() {
                       placeholder="Hotel Name"
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       maxLength={50}
                       required
                     />
@@ -941,7 +966,7 @@ export default function HotelManagement() {
                       placeholder="Address"
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       required
                     />
                   </div>
@@ -952,7 +977,7 @@ export default function HotelManagement() {
                       placeholder="District"
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.district}
-                      onChange={(e) => setFormData({...formData, district: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, district: e.target.value })}
                       required
                     />
                   </div>
@@ -963,7 +988,7 @@ export default function HotelManagement() {
                       placeholder="Province"
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.province}
-                      onChange={(e) => setFormData({...formData, province: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                       required
                     />
                   </div>
@@ -974,7 +999,7 @@ export default function HotelManagement() {
                       placeholder="Postal Code"
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.postalcode}
-                      onChange={(e) => setFormData({...formData, postalcode: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, postalcode: e.target.value })}
                       maxLength={5}
                       required
                     />
@@ -986,7 +1011,7 @@ export default function HotelManagement() {
                       placeholder="Telephone"
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.tel}
-                      onChange={(e) => setFormData({...formData, tel: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, tel: e.target.value })}
                     />
                   </div>
                   <div className="flex flex-col space-y-1">
@@ -996,7 +1021,7 @@ export default function HotelManagement() {
                       placeholder="Picture URL"
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.picture}
-                      onChange={(e) => setFormData({...formData, picture: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, picture: e.target.value })}
                       required
                     />
                   </div>
@@ -1006,7 +1031,7 @@ export default function HotelManagement() {
                       placeholder="Description"
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       required
                     />
                   </div>
@@ -1028,6 +1053,124 @@ export default function HotelManagement() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Room Type Modal */}
+      {isViewingRoomType && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-serif text-[#C9A55C]">
+                Room type of {selectedHotel?.name}
+              </h3>
+              <button
+                onClick={() => setIsViewingRoomType(false)}
+                className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
+                              hover:bg-[#C9A55C] hover:text-white transition-colors"
+              >
+                Add New Room Type
+              </button>
+              <button
+                onClick={() => setIsViewingRoomType(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Room Type Search Controls */}
+            <div className="mb-6 space-y-4">
+              <SearchBar
+                onSearch={setSearchTerm}
+                placeholder="Search room type by name"
+              />
+              {/* <div className="flex gap-4">
+                <input
+                  type="date"
+                  value={searchDateRange.start || ''}
+                  onChange={(e) => setSearchDateRange(prev => ({ ...prev, start: e.target.value }))}
+                  className="flex-1 p-2 bg-[#2A2A2A] border border-[#333333] rounded text-white"
+                />
+                <input
+                  type="date"
+                  value={searchDateRange.end || ''}
+                  onChange={(e) => setSearchDateRange(prev => ({ ...prev, end: e.target.value }))}
+                  className="flex-1 p-2 bg-[#2A2A2A] border border-[#333333] rounded text-white"
+                />
+                <input
+                  type="text"
+                  value={searchBookingId}
+                  onChange={(e) => setSearchBookingId(e.target.value)}
+                  placeholder="Search by Booking ID"
+                  className="flex-1 p-2 bg-[#2A2A2A] border border-[#333333] rounded text-white"
+                />
+              </div> */}
+            </div>
+
+            {/* Room Type List */}
+            <div className="space-y-4">
+              {filteredBookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-300">
+                    {searchTerm || searchDateRange.start || searchDateRange.end || searchBookingId
+                      ? 'No bookings found matching your search.'
+                      : 'No bookings found.'}
+                  </p>
+                </div>
+              ) : (
+                filteredBookings.map((booking) => (
+                  <div key={booking._id} className="border border-[#333333] rounded-lg p-4 bg-[#1A1A1A] hover:bg-[#2A2A2A] transition-colors">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-white font-medium">
+                          {typeof booking.user === 'object' ? booking.user.name : 'Loading...'}
+                        </p>
+                        <p className="text-gray-400">
+                          Check-in: {new Date(booking.checkinDate).toLocaleDateString()}
+                        </p>
+                        <p className="text-gray-400">
+                          Check-out: {new Date(booking.checkoutDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-[#C9A55C]">Booking ID: {booking._id}</p>
+                        <p className="text-xs text-gray-500">
+                          Created: {new Date(booking.createdAt).toLocaleString()}
+                        </p>
+                        <div className="mt-2 space-x-2">
+                          <button
+                            onClick={() => handleEditBooking(booking)}
+                            className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
+                              hover:bg-[#C9A55C] hover:text-white transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBooking(booking._id)}
+                            disabled={isDeletingBooking}
+                            className="px-3 py-1 bg-red-900/20 text-red-500 border border-red-500 rounded 
+                              hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
+                          >
+                            {isDeletingBooking ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Only show pagination if there are bookings and we're not searching */}
+            {filteredBookings.length > 0 && !searchTerm && !searchDateRange.start && !searchDateRange.end && !searchBookingId && (
+              <Pagination
+                totalItems={totalBookings}
+                currentPage={bookingPage}
+                onPageChange={handleBookingPageChange}
+              />
+            )}
           </div>
         </div>
       )}

@@ -5,7 +5,8 @@ const nextConfig = {
       "drive.google.com",
       "img5.pic.in.th",
       "img2.pic.in.th",
-      "example.com" 
+      "example.com",
+      "drive.usercontent.google.com"
     ],
   },
   async headers() {
