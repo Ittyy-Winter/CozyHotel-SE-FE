@@ -80,3 +80,21 @@ export interface RoomTypeFormData {
   nonAvailableRooms: number;
   isAvailable: boolean;
 }
+
+export interface AvailableRoomType {
+  roomTypeId: string;
+  totalRooms: number;
+  bookedRooms: number;
+  availableRooms: number;
+  isAvailable: boolean;
+  roomTypeDetails: {
+    name: string;
+    capacity: number;
+    bedType: string;
+    basePrice: number;
+    currency: string;
+  };
+  dailyBookings: {
+    [date: string]: number; // map of date -> number of bookings
+  };
+};

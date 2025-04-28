@@ -9,10 +9,12 @@ import deleteHotel from '@/libs/hotel/deleteHotel';
 import getBookingsByHotel from '@/libs/booking/getBookingsByHotel';
 import getRoomTypesByHotel from '@/libs/roomtype/getRoomTypesByHotel'
 import editBooking from '@/libs/booking/editBooking';
-import { Hotel, HotelUpdate, Booking, RoomType, RoomTypeFormData } from '@/types';
+import { Hotel, HotelUpdate, Booking, RoomType, RoomTypeFormData, AvailableRoomType } from '@/types';
 import LoadingSpinner from './LoadingSpinner';
 import SearchBar from '../SearchBar';
 import DashboardStats from './DashboardStats';
+import getAvailableRoomTypes from '@/libs/roomtype/getAvailableRoomTypes';
+import { MonthCalendar } from '@mui/x-date-pickers';
 
 export default function HotelManagement() {
   const { data: session } = useSession();
@@ -99,6 +101,102 @@ export default function HotelManagement() {
   const [editingRoomType, setEditingRoomType] = useState<RoomType | null>(null);
   const [roomTypeEditingFormData, setRoomTypeEditingFormData] = useState<RoomTypeFormData>(roomTypeFormData);
 
+  const [isViewingAvailability, setIsViewingAvailability] = useState(false);
+  const [selectedRoomTypeId, setSelectedRoomTypeId] = useState<string | null>(null);
+  const [availableRoomTypes, setAvailableRoomTypes] = useState<AvailableRoomType[]>([]);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [roomTypeDailyBookings, setRoomTypeDailyBookings] = useState<{ [date: string]: number }>({});
+  const [hotelId, setHotelId] = useState<string>('');
+
+  const CalendarAvailability = ({
+    month,
+    availability,
+  }: {
+    month: Date;
+    availability: { [date: string]: number };
+  }) => {
+    const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+    const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  
+    const dates = [];
+    for (let day = 1; day <= endOfMonth.getDate(); day++) {
+      const date = new Date(month.getFullYear(), month.getMonth(), day);
+      const dateStr = date.toISOString().split('T')[0];
+      const available = availability[dateStr] ?? 0;
+  
+      dates.push(
+        <div
+          key={day}
+          className={`border p-2 text-center rounded ${
+            available > 0 ? 'text-[#C9A55C]' : 'text-gray-500'
+          }`}
+        >
+          <div className="text-xs">{day}</div>
+          <div className="text-xs">{available} rooms</div>
+        </div>
+      );
+    }
+  
+    return (
+      <div className="grid grid-cols-7 gap-2">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+          <div key={day} className="text-center text-sm font-semibold text-white">
+            {day}
+          </div>
+        ))}
+        {Array(startOfMonth.getDay()).fill(null).map((_, idx) => (
+          <div key={`empty-${idx}`} />
+        ))}
+        {dates}
+      </div>
+    );
+  };
+
+  const handleChangeMonth = (direction: 'prev' | 'next') => {
+    const newMonth = new Date(calendarMonth);
+    newMonth.setMonth(calendarMonth.getMonth() + (direction === 'next' ? 1 : -1));
+    setCalendarMonth(newMonth);
+
+    console.log('Changed Month:', newMonth.toLocaleString('default', { month: 'long', year: 'numeric' }));
+
+    fetchRoomAvailabilityForMonth(hotelId, newMonth);
+  };
+  
+  const fetchRoomAvailabilityForMonth = async (hotelId: string,month: Date) => {
+    if (!session?.user?.token) return;
+    setIsViewingAvailability(true);
+  
+    const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+    const lastDayOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  
+    try {
+      const response = await getAvailableRoomTypes(
+        hotelId,
+        firstDayOfMonth.toISOString().split('T')[0],
+        lastDayOfMonth.toISOString().split('T')[0],
+        session?.user?.token
+      );
+      console.log(response.data);
+      
+      setAvailableRoomTypes(response.data.availableRoomTypes || []);
+    } catch (error) {
+      console.error('Error fetching room types availability:', error);
+    }
+  };
+
+  useEffect(() => {
+    if(hotelId){
+      fetchRoomAvailabilityForMonth(hotelId,calendarMonth);
+    }
+  }, [hotelId, calendarMonth]);
+
+  useEffect(() => {
+    console.log('Calendar Month Changed:', calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' }));
+  }, [calendarMonth]); // Log whenever calendarMonth changes
+  
+  useEffect(() => {
+    console.log('Selected Room Type Changed:', selectedRoomTypeId);
+  }, [selectedRoomTypeId]); // Log whenever selectedRoomTypeId changes
 
   const validateForm = (data: typeof formData) => {
     if (data.name.length > 50) {
@@ -269,6 +367,36 @@ export default function HotelManagement() {
     }
   };
 
+//   const handleViewRoomAvailability = async (hotelId: string) => {
+//     if (!session?.user?.token) return;
+//     setIsViewingAvailability(true);
+
+//     console.log('isViewingAvailability:', true);
+
+//     const today = new Date();
+//     const nextMonth = new Date();
+//     nextMonth.setMonth(today.getMonth() + 1);
+
+//     try {
+//       const response = await getAvailableRoomTypes(
+//         hotelId,
+//         today.toISOString().split('T')[0],
+//         nextMonth.toISOString().split('T')[0],
+//         session?.user?.token
+//       );
+
+//       console.log('API Response:', response.data); // Check the full response here
+//       // Check if `response.data.availableRoomTypes` is an array and contains multiple items
+//       if (Array.isArray(response.data.availableRoomTypes)) {
+//         setAvailableRoomTypes(response.data.availableRoomTypes); // Directly set the room types array
+//       } else {
+//         console.error('Invalid response structure:', response.data);
+//       }
+//     } catch (error) {
+//       console.error('Error fetching room types availability:', error);
+//     }
+// };
+  
   const handleViewBookings = async (hotelId: string) => {
     if (!session?.user?.token) return;
     setBookingsLoading(true);
@@ -968,7 +1096,9 @@ export default function HotelManagement() {
       <h2 className="text-2xl font-serif text-[#C9A55C] mb-6">Hotel Management</h2>
 
       {/* Dashboard */}
-      <DashboardStats />
+      <div className="mb-6">
+        <DashboardStats />
+      </div>
 
       {/* Hotel Search */}
       <div className="mb-6">
@@ -1001,6 +1131,17 @@ export default function HotelManagement() {
                 <p className="text-sm text-gray-400">Tel: {hotel.tel}</p>
               </div>
               <div className="flex space-x-2">
+              <button
+                  onClick={() => {
+                    console.log('Button Clicked');
+                    setHotelId(hotel._id);
+                    fetchRoomAvailabilityForMonth(hotel._id,calendarMonth);
+                    }}
+                  className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
+                    hover:bg-[#C9A55C] hover:text-white transition-colors"
+                >
+                  View Available room
+                </button>
                 <button
                   onClick={() => handleViewBookings(hotel._id)}
                   className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
@@ -1489,6 +1630,76 @@ export default function HotelManagement() {
           </div>
         </div>
       )}
+
+{isViewingAvailability && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-serif text-[#C9A55C]">Room Available</h3>
+                    <button
+                      onClick={() => {
+                        setIsViewingAvailability(false);
+                        setSelectedRoomTypeId(null);
+                        setRoomTypeDailyBookings({});
+                      }}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Room Type Dropdown */}
+                  <div className="mb-6">
+                    <select
+                      className="w-full p-2 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded"
+                      value={selectedRoomTypeId || ''}
+                      onChange={(e) => {
+                        const roomId = e.target.value;
+                        setSelectedRoomTypeId(roomId);
+                        const selectedRoom = availableRoomTypes.find(room => room.roomTypeId === roomId);
+                        setRoomTypeDailyBookings(selectedRoom?.dailyBookings || {});
+                      
+                        console.log('Selected Room Type ID:', roomId);
+                        console.log('Updated Room Type Daily Bookings:', selectedRoom?.dailyBookings);
+                      }}
+                    >
+                      <option value="">Select Room Type</option>
+                      {availableRoomTypes.map((room) => (
+                        <option key={room.roomTypeId} value={room.roomTypeId}>
+                          {room.roomTypeDetails.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Month Selection */}
+                  <div className="flex justify-between mb-4">
+                    <button
+                      onClick={() => handleChangeMonth('prev')}
+                      className="bg-[#2A2A2A] text-[#C9A55C] p-2 rounded hover:bg-[#C9A55C] hover:text-white"
+                    >
+                      Previous Month
+                    </button>
+                    <span className="text-[#C9A55C] text-lg">{calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                    <button
+                      onClick={() => handleChangeMonth('next')}
+                      className="bg-[#2A2A2A] text-[#C9A55C] p-2 rounded hover:bg-[#C9A55C] hover:text-white"
+                    >
+                      Next Month
+                    </button>
+                  </div>
+
+                  {/* Calendar */}
+                  {selectedRoomTypeId ? (
+                    <div>
+                      <CalendarAvailability month={calendarMonth} availability={roomTypeDailyBookings} />
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-500">Please select a room type to view availability.</p>
+                  )}
+                </div>
+              </div>
+            )}
 
       {isAddingRoomType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">

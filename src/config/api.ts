@@ -45,6 +45,12 @@ export const API_ENDPOINTS = {
       ? `/api/proxy-roomtype/${id}`
       : `${API_BASE_URL}/api/v1/roomtypes/hotel/${id}`,
   },
+  AVAILABILITY: {
+    ROOM_TYPES:
+      process.env.NODE_ENV === "development"
+        ? "/api/proxy-availability-room-types"
+        : `${API_BASE_URL}/api/v1/availability/room-types`,
+  },
   // Accounts
   ACCOUNTS: {
     BASE:
