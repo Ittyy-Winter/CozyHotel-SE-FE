@@ -6,7 +6,7 @@ export async function POST(req: NextRequest, { params }: { params: { hotelId: st
   const hotelId = params.hotelId;
   const token = req.headers.get('authorization');
 
-  // ✅ Ensure correct Bearer token format
+  // Ensure correct Bearer token format
   const formattedToken = token?.startsWith('Bearer ') ? token : `Bearer ${token}`;
 
   console.log("Proxy route token:", token);
@@ -22,6 +22,8 @@ export async function POST(req: NextRequest, { params }: { params: { hotelId: st
   });
 
   const data = await res.json();
+  console.log("Response status:", res.status);
+  console.log("Backend response data:", data);
 
   return NextResponse.json(data, { status: res.status });
 }

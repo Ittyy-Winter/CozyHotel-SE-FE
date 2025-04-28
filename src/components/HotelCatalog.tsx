@@ -4,23 +4,28 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import getHotels from "@/libs/hotel/getHotels";
-import DateReserve from "./DateReserve"; // adjust the path if needed
+import DateReserve from "./DateReserve"; // Adjust the path if needed
 import dayjs, { Dayjs } from "dayjs";
+import getAvailableHotels from "@/libs/hotel/getAvailableHotels";
+import getHotel from "@/libs/hotel/getHotel"; // Import the getHotel function
 
 type Hotel = {
-  name: string;
-  address: string;
+  hotelId: string;  // Use this for the hotel identifier
+  hotelName: string;  // Changed to match the actual property from your data
+  hotelAddress: string; 
   district: string;
   province: string;
   postalcode: string;
   tel: string;
   picture: string;
   description: string;
-  id: string;
 };
 
+
 type HotelJson = {
-  data: Hotel[];
+  data: {
+    availableHotels: Hotel[];
+  };
   count: number;
 };
 
@@ -40,12 +45,52 @@ export default function HotelCatalog() {
     }
   }, [currentPage]);
 
+  // Fetch hotels (available + details)
   const fetchHotels = async () => {
+    if (!checkinDate || !checkoutDate) {
+      console.error("Check-in and check-out dates are required");
+      return;
+    }
+  
     try {
       setIsLoading(true);
-      const response: HotelJson = await getHotels(currentPage, itemsPerPage);
-      setHotels(response.data);
-      setTotalItems(response.count);
+  
+      // Step 1: Fetch available hotels
+      const availableHotelsResponse: HotelJson = await getAvailableHotels(
+        checkinDate.format("YYYY-MM-DD"),
+        checkoutDate.format("YYYY-MM-DD")
+      );
+  
+      const availableHotels = availableHotelsResponse.data.availableHotels;
+  
+      // Log availableHotels to check the structure and ensure hotel.hotelId exists
+      console.log("Available Hotels:", availableHotels);
+  
+      // Step 2: For each available hotel, fetch full details (e.g., picture)
+      const hotelsWithDetails = await Promise.all(
+        availableHotels.map(async (hotel) => {
+          console.log("Hotel ", hotel); // Log the hotelId to ensure it's defined
+  
+          // Fetch hotel details
+          const hotelDetailsResponse = await getHotel(hotel.hotelId);
+          console.log("Hotel Details Response:", hotelDetailsResponse); // Log the full response
+  
+          // Ensure `hotelDetailsResponse.data` has the expected properties
+          const { picture, description, district, province } = hotelDetailsResponse.data;
+  
+          return {
+            ...hotel,
+            picture: picture || 'default-image.jpg', // Provide a fallback image if picture is missing
+            description: description || 'No description available', // Provide a fallback description
+            district: district || hotel.district || 'Unknown district', // Use `district` from hotel details or available hotel data
+            province: province || hotel.province || 'Unknown province', // Use `province` from hotel details or available hotel data
+          };
+        })
+      );
+  
+      // Step 3: Update state with combined data
+      setHotels(hotelsWithDetails);
+      setTotalItems(hotelsWithDetails.length);
     } catch (error) {
       console.error("Error fetching hotels:", error);
     } finally {
@@ -53,19 +98,26 @@ export default function HotelCatalog() {
     }
   };
 
-  const HotelList = ({ hotels }: { hotels: Hotel[] }) => (
-    <div className="space-y-8">
-      {hotels.map((hotelItem) => (
+  
+  // Hotel list component
+const HotelList = ({ hotels }: { hotels: Hotel[] }) => (
+  <div className="space-y-8">
+    {hotels.map((hotelItem) => {
+      console.log("Hotel Item:", hotelItem);
+      console.log("Hotel Name:", hotelItem.hotelName); // Log the hotel name to the console
+      console.log("Hotel district:", hotelItem.district); // Log the hotel name to the console
+      console.log("Hotel province:", hotelItem.province); // Log the hotel name to the console
+      return (
         <Link
-          href={`roomtypes/hotel/${hotelItem.id}?checkin=${checkinDate?.format("YYYY-MM-DD")}&checkout=${checkoutDate?.format("YYYY-MM-DD")}`}
-          key={hotelItem.id}
+          href={`roomtypes/hotel/${hotelItem.hotelId}?checkin=${checkinDate?.format("YYYY-MM-DD")}&checkout=${checkoutDate?.format("YYYY-MM-DD")}`}
+          key={hotelItem.hotelId}
           className="group block"
         >
           <div className="flex flex-col md:flex-row">
             <div className="relative w-full md:w-[400px] h-[300px] md:h-[250px] overflow-hidden">
               <Image
                 src={hotelItem.picture}
-                alt={hotelItem.name}
+                alt={hotelItem.hotelName}
                 fill
                 className="object-cover transition-transform duration-1000 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, 400px"
@@ -79,7 +131,7 @@ export default function HotelCatalog() {
               <div>
                 <h3 className="text-2xl font-serif text-[#C9A55C] 
                   transition-colors duration-500 group-hover:text-white mb-3 tracking-wide">
-                  {hotelItem.name}
+                  {hotelItem.hotelName}
                 </h3>
                 <p className="text-gray-400 text-sm font-light tracking-[0.1em] uppercase mb-4">
                   {hotelItem.district}, {hotelItem.province}
@@ -101,10 +153,13 @@ export default function HotelCatalog() {
             </div>
           </div>
         </Link>
-      ))}
-    </div>
-  );
+      );
+    })}
+  </div>
+);
 
+
+  // Pagination component
   const Pagination = ({
     totalItems,
     currentPage,

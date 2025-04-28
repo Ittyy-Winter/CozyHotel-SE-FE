@@ -33,7 +33,10 @@ export const API_ENDPOINTS = {
     BY_MANAGER: process.env.NODE_ENV === "development"
         ? `/api/proxy-hotel-manager`
         : `${API_BASE_URL}/api/v1/manager/hotels`,
-    BY_ID: (id: string) => `${API_BASE_URL}/api/v1/hotels/${id}`,
+    BY_ID: (id: string) =>
+      process.env.NODE_ENV === "development"
+        ? `/api/proxy-hotels/${id}` // Proxy route in development for hotel ID
+        : `${API_BASE_URL}/api/v1/hotels/${id}`,
     BOOKINGS: (hotelId: string) =>
       process.env.NODE_ENV === "development"
         ? `/api/proxy-hotel-booking/${hotelId}`
@@ -50,6 +53,9 @@ export const API_ENDPOINTS = {
       process.env.NODE_ENV === "development"
         ? "/api/proxy-availability-room-types"
         : `${API_BASE_URL}/api/v1/availability/room-types`,
+        HOTELS: process.env.NODE_ENV === "development"
+        ? "/api/proxy-available-hotels"
+        : `${API_BASE_URL}/api/v1/availability/hotels`, 
   },
   // Accounts
   ACCOUNTS: {
