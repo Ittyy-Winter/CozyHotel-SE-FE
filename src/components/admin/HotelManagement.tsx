@@ -90,7 +90,7 @@ export default function HotelManagement() {
     images: [],
     basePrice: 0,
     currency: 'THB',
-    totalRooms: 0,
+    totalRooms: 1,
     nonAvailableRooms: 0,
     isAvailable: true,
   });
@@ -434,6 +434,7 @@ export default function HotelManagement() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Server response error:', errorData);
+        alert('Failed to create room type');
         throw new Error('Failed to create room type');
       }
 
@@ -1336,7 +1337,6 @@ export default function HotelManagement() {
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      required
                     />
                   </div>
                   <div className="flex space-x-4">
@@ -1545,7 +1545,6 @@ export default function HotelManagement() {
                     className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                     value={roomTypeFormData.description}
                     onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, description: e.target.value })}
-                    required
                   />
                 </div>
 
@@ -1593,16 +1592,16 @@ export default function HotelManagement() {
                     className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                     value={roomTypeFormData.size}
                     onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, size: e.target.value })}
-                    required
                   />
                 </div>
 
-                {/* Base Price + Total Rooms + Non Available Rooms */}
+                {/* Base Price + Total Rooms */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block mb-1 text-sm text-gray-400">Base Price (THB)</label>
                     <input
                       type="number"
+                      min="0"
                       className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={roomTypeFormData.basePrice}
                       onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, basePrice: parseNumberInput(e.target.value) })}
@@ -1622,7 +1621,7 @@ export default function HotelManagement() {
                     />
                   </div>
 
-                  <div>
+                  {/* <div>
                     <label className="block mb-1 text-sm text-gray-400">Non Available</label>
                     <input
                       type="number"
@@ -1632,7 +1631,7 @@ export default function HotelManagement() {
                       onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, nonAvailableRooms: parseNumberInput(e.target.value) })}
                       required
                     />
-                  </div>
+                  </div>  */}
                 </div>
 
                 {/* Is Available */}
@@ -1758,6 +1757,7 @@ export default function HotelManagement() {
                   className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
                   value={roomTypeEditingFormData.name}
                   onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, name: e.target.value })}
+                  required
                 />
               </div>
 
@@ -1820,6 +1820,7 @@ export default function HotelManagement() {
                   <label className="block mb-1 text-sm text-gray-400">Base Price (THB)</label>
                   <input
                     type="number"
+                    min="0"
                     className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
                     placeholder="Base Price"
                     value={roomTypeEditingFormData.basePrice}
@@ -1830,12 +1831,13 @@ export default function HotelManagement() {
                   <label className="block mb-1 text-sm text-gray-400">Total Rooms</label>
                   <input
                     type="number"
+                    min="0"
                     className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
                     placeholder="Total Rooms"
                     value={roomTypeEditingFormData.totalRooms}
                     onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, totalRooms: parseNumberInput(e.target.value) })}
                   />
-                  <div>
+                  {/* <div>
                     <label className="block mb-1 text-sm text-gray-400">Non Available</label>
                     <input
                       type="number"
@@ -1844,7 +1846,7 @@ export default function HotelManagement() {
                       value={roomTypeEditingFormData.nonAvailableRooms}
                       onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, nonAvailableRooms: parseNumberInput(e.target.value) })}
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
