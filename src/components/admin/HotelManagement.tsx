@@ -90,7 +90,7 @@ export default function HotelManagement() {
     images: [],
     basePrice: 0,
     currency: 'THB',
-    totalRooms: 0,
+    totalRooms: 1,
     nonAvailableRooms: 0,
     isAvailable: true,
   });
@@ -1533,6 +1533,7 @@ export default function HotelManagement() {
                     value={roomTypeFormData.name}
                     onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, name: e.target.value })}
                     maxLength={50}
+                    required
                   />
                 </div>
 
@@ -1600,6 +1601,7 @@ export default function HotelManagement() {
                     <label className="block mb-1 text-sm text-gray-400">Base Price (THB)</label>
                     <input
                       type="number"
+                      min="0"
                       className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={roomTypeFormData.basePrice}
                       onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, basePrice: parseNumberInput(e.target.value) })}
@@ -1618,7 +1620,7 @@ export default function HotelManagement() {
                       required
                     />
                   </div>
-                  
+
                   {/* <div>
                     <label className="block mb-1 text-sm text-gray-400">Non Available</label>
                     <input
@@ -1755,6 +1757,7 @@ export default function HotelManagement() {
                   className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
                   value={roomTypeEditingFormData.name}
                   onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, name: e.target.value })}
+                  required
                 />
               </div>
 
@@ -1817,6 +1820,7 @@ export default function HotelManagement() {
                   <label className="block mb-1 text-sm text-gray-400">Base Price (THB)</label>
                   <input
                     type="number"
+                    min="0"
                     className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
                     placeholder="Base Price"
                     value={roomTypeEditingFormData.basePrice}
@@ -1827,6 +1831,7 @@ export default function HotelManagement() {
                   <label className="block mb-1 text-sm text-gray-400">Total Rooms</label>
                   <input
                     type="number"
+                    min="0"
                     className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
                     placeholder="Total Rooms"
                     value={roomTypeEditingFormData.totalRooms}
