@@ -7,6 +7,7 @@ import { authOptions } from "../app/api/auth/[...nextauth]/authOptions";
 export default async function TopMenu() {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === 'admin';
+  const isManager = session?.user?.role === 'manager';
 
   return (
     <div
@@ -32,6 +33,12 @@ export default async function TopMenu() {
           <TopMenuItem 
             title="Admin Dashboard" 
             pageRef="/admin/dashboard" 
+          />
+        )}
+        {isManager && (
+          <TopMenuItem 
+            title="Manager Dashboard" 
+            pageRef="/manager/dashboard" 
           />
         )}
       </div>
