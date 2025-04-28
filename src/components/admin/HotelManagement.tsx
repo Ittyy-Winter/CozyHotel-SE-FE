@@ -1544,7 +1544,6 @@ export default function HotelManagement() {
                     className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                     value={roomTypeFormData.description}
                     onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, description: e.target.value })}
-                    required
                   />
                 </div>
 
