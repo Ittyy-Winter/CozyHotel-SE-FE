@@ -407,27 +407,30 @@ export default function AccountManagement() {
                 </p>
               </div>
               <div className="flex space-x-2">
-                <button
-                  onClick={() => handleRoleChange(user._id, "admin")}
-                  className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded hover:bg-[#C9A55C] hover:text-white transition-colors"
-                  disabled={user.role === "admin"}
-                >
-                  Make Admin
-                </button>
-                <button
-                  onClick={() => handleRoleChange(user._id, "manager")}
-                  className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded hover:bg-[#C9A55C] hover:text-white transition-colors"
-                  disabled={user.role === "manager"}
-                >
-                  Make Manager
-                </button>
-                <button
-                  onClick={() => handleRoleChange(user._id, "user")}
-                  className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded hover:bg-[#C9A55C] hover:text-white transition-colors"
-                  disabled={user.role === "user"}
-                >
-                  Make User
-                </button>
+                {user.role !== "admin" && (
+                  <button
+                    onClick={() => handleRoleChange(user._id, "admin")}
+                    className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded hover:bg-[#C9A55C] hover:text-white transition-colors"
+                  >
+                    Make Admin
+                  </button>
+                )}
+                {user.role !== "manager" && (
+                  <button
+                    onClick={() => handleRoleChange(user._id, "manager")}
+                    className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded hover:bg-[#C9A55C] hover:text-white transition-colors"
+                  >
+                    Make Manager
+                  </button>
+                )}
+                {user.role !== "user" && (
+                  <button
+                    onClick={() => handleRoleChange(user._id, "user")}
+                    className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded hover:bg-[#C9A55C] hover:text-white transition-colors"
+                  >
+                    Make User
+                  </button>
+                )}
                 {user.role === "manager" && (
                   <button
                     onClick={() => {
