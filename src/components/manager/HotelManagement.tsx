@@ -95,7 +95,7 @@ export default function HotelManagement() {
     currency: 'THB',
     totalRooms: 0,
     nonAvailableRooms: 0,
-    isAvailable: true,
+    isActivated: true,
   });
   const [isEditingRoomType, setIsEditingRoomType] = useState(false);
   const [editingRoomType, setEditingRoomType] = useState<RoomType | null>(null);
@@ -117,26 +117,25 @@ export default function HotelManagement() {
   }) => {
     const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
     const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-  
+
     const dates = [];
+
     for (let day = 1; day <= endOfMonth.getDate(); day++) {
       const date = new Date(month.getFullYear(), month.getMonth(), day);
       const dateStr = date.toISOString().split('T')[0];
       const available = availability[dateStr] ?? 0;
-  
+
       dates.push(
         <div
           key={day}
-          className={`border p-2 text-center rounded ${
-            available > 0 ? 'text-[#C9A55C]' : 'text-gray-500'
-          }`}
+          className={`border p-2 text-center rounded ${available > 0 ? 'text-[#C9A55C]' : 'text-gray-500'}`}
         >
           <div className="text-xs">{day}</div>
           <div className="text-xs">{available} rooms</div>
         </div>
       );
     }
-  
+
     return (
       <div className="grid grid-cols-7 gap-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
@@ -161,14 +160,14 @@ export default function HotelManagement() {
 
     fetchRoomAvailabilityForMonth(hotelId, newMonth);
   };
-  
-  const fetchRoomAvailabilityForMonth = async (hotelId: string,month: Date) => {
+
+  const fetchRoomAvailabilityForMonth = async (hotelId: string, month: Date) => {
     if (!session?.user?.token) return;
     setIsViewingAvailability(true);
-  
+
     const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
     const lastDayOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-  
+
     try {
       const response = await getAvailableRoomTypes(
         hotelId,
@@ -176,24 +175,43 @@ export default function HotelManagement() {
         lastDayOfMonth.toISOString().split('T')[0],
         session?.user?.token
       );
-      console.log(response.data);
-      
+
+      console.log('Available Room Types:', response.data.availableRoomTypes);
       setAvailableRoomTypes(response.data.availableRoomTypes || []);
+
+      if (selectedRoomTypeId) {
+        const selectedRoom = response.data.availableRoomTypes.find(
+          (room: AvailableRoomType) => room.roomTypeId === selectedRoomTypeId
+        );
+        if (selectedRoom) {
+          const autoFillDailyBookings: { [date: string]: number } = {};
+          for (let d = new Date(firstDayOfMonth); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+
+            if (selectedRoom.dailyBookings && dateStr in selectedRoom.dailyBookings) {
+              autoFillDailyBookings[dateStr] = (selectedRoom.totalRooms - selectedRoom.dailyBookings[dateStr]);
+            } else {
+              autoFillDailyBookings[dateStr] = selectedRoom.totalRooms;
+            }
+          }
+          setRoomTypeDailyBookings(autoFillDailyBookings);
+        }
+      }
     } catch (error) {
       console.error('Error fetching room types availability:', error);
     }
   };
 
   useEffect(() => {
-    if(hotelId){
-      fetchRoomAvailabilityForMonth(hotelId,calendarMonth);
+    if (hotelId) {
+      fetchRoomAvailabilityForMonth(hotelId, calendarMonth);
     }
   }, [hotelId, calendarMonth]);
 
   useEffect(() => {
     console.log('Calendar Month Changed:', calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' }));
   }, [calendarMonth]); // Log whenever calendarMonth changes
-  
+
   useEffect(() => {
     console.log('Selected Room Type Changed:', selectedRoomTypeId);
   }, [selectedRoomTypeId]); // Log whenever selectedRoomTypeId changes
@@ -260,7 +278,7 @@ export default function HotelManagement() {
     if (!session?.user?.token) return;
     try {
       setIsLoading(true);
-      const response = await getManagerHotels(session.user.token,1, 1000); // Fetch a large number of hotels
+      const response = await getManagerHotels(session.user.token, 1, 1000); // Fetch a large number of hotels
       setAllHotels(response.data);
       setTotalItems(response.count);
       setIsLoading(false);
@@ -274,7 +292,7 @@ export default function HotelManagement() {
     if (!session?.user?.token) return;
     try {
       setIsLoading(true);
-      const response = await getManagerHotels(session.user.token,currentPage, itemsPerPage);
+      const response = await getManagerHotels(session.user.token, currentPage, itemsPerPage);
       setHotels(response.data);
       setTotalItems(response.count);
       setIsLoading(false);
@@ -367,36 +385,15 @@ export default function HotelManagement() {
     }
   };
 
-//   const handleViewRoomAvailability = async (hotelId: string) => {
-//     if (!session?.user?.token) return;
-//     setIsViewingAvailability(true);
+  const handleViewRoomAvailability = async (hotelId: string) => {
+    setHotelId(hotelId);
 
-//     console.log('isViewingAvailability:', true);
+    if (!session?.user?.token) return;
 
-//     const today = new Date();
-//     const nextMonth = new Date();
-//     nextMonth.setMonth(today.getMonth() + 1);
+    const today = new Date();
+    fetchRoomAvailabilityForMonth(hotelId, today);
+  };
 
-//     try {
-//       const response = await getAvailableRoomTypes(
-//         hotelId,
-//         today.toISOString().split('T')[0],
-//         nextMonth.toISOString().split('T')[0],
-//         session?.user?.token
-//       );
-
-//       console.log('API Response:', response.data); // Check the full response here
-//       // Check if `response.data.availableRoomTypes` is an array and contains multiple items
-//       if (Array.isArray(response.data.availableRoomTypes)) {
-//         setAvailableRoomTypes(response.data.availableRoomTypes); // Directly set the room types array
-//       } else {
-//         console.error('Invalid response structure:', response.data);
-//       }
-//     } catch (error) {
-//       console.error('Error fetching room types availability:', error);
-//     }
-// };
-  
   const handleViewBookings = async (hotelId: string) => {
     if (!session?.user?.token) return;
     setBookingsLoading(true);
@@ -545,7 +542,7 @@ export default function HotelManagement() {
       currency: roomTypeFormData.currency,
       totalRooms: roomTypeFormData.totalRooms,
       nonAvailableRooms: roomTypeFormData.nonAvailableRooms,
-      isAvailable: roomTypeFormData.isAvailable,
+      isActivated: roomTypeFormData.isActivated,
     };
 
     console.log('Payload ที่ส่งไป:', payload);
@@ -584,7 +581,7 @@ export default function HotelManagement() {
         currency: 'THB',
         totalRooms: 0,
         nonAvailableRooms: 0,
-        isAvailable: true,
+        isActivated: true,
       });
 
       console.log('Room type created successfully');
@@ -610,7 +607,7 @@ export default function HotelManagement() {
       currency: room.currency,
       totalRooms: room.totalRooms,
       nonAvailableRooms: room.nonAvailableRooms,
-      isAvailable: room.isAvailable,
+      isActivated: room.isActivated,
     });
   };
 
@@ -634,7 +631,7 @@ export default function HotelManagement() {
         currency: roomTypeEditingFormData.currency,
         totalRooms: roomTypeEditingFormData.totalRooms,
         nonAvailableRooms: roomTypeEditingFormData.nonAvailableRooms,
-        isAvailable: roomTypeEditingFormData.isAvailable,
+        isActivated: roomTypeEditingFormData.isActivated,
       };
 
       const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${editingRoomType._id}`, {
@@ -684,7 +681,7 @@ export default function HotelManagement() {
         currency: room.currency,
         totalRooms: room.totalRooms,
         nonAvailableRooms: room.nonAvailableRooms,
-        isAvailable: false,
+        isActivated: false,
       };
 
       const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${room._id}`, {
@@ -725,7 +722,7 @@ export default function HotelManagement() {
         currency: room.currency,
         totalRooms: room.totalRooms,
         nonAvailableRooms: room.nonAvailableRooms,
-        isAvailable: true,
+        isActivated: true,
       };
 
       const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${room._id}`, {
@@ -775,7 +772,7 @@ export default function HotelManagement() {
     currentPage: number;
     onPageChange: (page: number) => void;
   }) => {
-    const totalPages = itemsPerPage ? Math.ceil(totalItems / itemsPerPage) : 1;
+    const totalPages = totalItems ? Math.ceil(totalItems / itemsPerPage) : 1;
 
     if (totalPages <= 1) return null;
 
@@ -980,7 +977,7 @@ export default function HotelManagement() {
       currency: 'THB',
       totalRooms: 0,
       nonAvailableRooms: 0,
-      isAvailable: true,
+      isActivated: true,
     });
   };
 
@@ -1131,14 +1128,21 @@ export default function HotelManagement() {
                 <p className="text-sm text-gray-400">Tel: {hotel.tel}</p>
               </div>
               <div className="flex space-x-2">
-              <button
+                {/* <button
                   onClick={() => {
                     console.log('Button Clicked');
                     setHotelId(hotel._id);
-                    fetchRoomAvailabilityForMonth(hotel._id,calendarMonth);
-                    }}
+                    fetchRoomAvailabilityForMonth(hotel._id, calendarMonth);
+                  }}
                   className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
                     hover:bg-[#C9A55C] hover:text-white transition-colors"
+                >
+                  View Available room
+                </button> */}
+                <button
+                  onClick={() => handleViewRoomAvailability(hotel._id)}
+                  className="px-3 py-1 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded 
+                    hover:bg-[#C9A55C] hover:text-white transition-color"
                 >
                   View Available room
                 </button>
@@ -1176,10 +1180,9 @@ export default function HotelManagement() {
         )}
       </div>
 
-      {/* Only show pagination if there are hotels and we're not searching */}
-      {filteredHotels.length > 0 && !hotelSearchTerm && (
+      {filteredHotels.length > 0 && (
         <Pagination
-          totalItems={totalItems}
+          totalItems={hotelSearchTerm ? filteredHotels.length : totalItems}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
         />
@@ -1551,7 +1554,7 @@ export default function HotelManagement() {
                   <div
                     key={room._id}
                     className={`border rounded-lg p-4 transition-colors
-    ${room.isAvailable
+    ${room.isActivated
                         ? 'border-[#333333] bg-[#1A1A1A] hover:bg-[#2A2A2A]'
                         : 'border-gray-700 bg-gray-800 opacity-60'}`}
                   >
@@ -1568,8 +1571,8 @@ export default function HotelManagement() {
                         <p className="text-sm text-gray-400">
                           Facilities: {room.facilities.join(', ')}
                         </p>
-                        <p className={`text-sm ${room.isAvailable ? 'text-green-500' : 'text-red-500'}`}>
-                          {room.isAvailable ? 'Available' : 'Deactivated'}
+                        <p className={`text-sm ${room.isActivated ? 'text-green-500' : 'text-red-500'}`}>
+                          {room.isActivated ? 'Available' : 'Deactivated'}
                         </p>
                       </div>
 
@@ -1580,7 +1583,7 @@ export default function HotelManagement() {
                         </p>
 
                         <div className="mt-2 space-x-2">
-                          {room.isAvailable ? (
+                          {room.isActivated ? (
                             <>
                               <button
                                 onClick={() => handleEditRoomType(room)}
@@ -1631,75 +1634,92 @@ export default function HotelManagement() {
         </div>
       )}
 
-{isViewingAvailability && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-serif text-[#C9A55C]">Room Available</h3>
-                    <button
-                      onClick={() => {
-                        setIsViewingAvailability(false);
-                        setSelectedRoomTypeId(null);
-                        setRoomTypeDailyBookings({});
-                      }}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      ✕
-                    </button>
-                  </div>
+      {isViewingAvailability && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-serif text-[#C9A55C]">Room Available</h3>
+              <button
+                onClick={() => {
+                  setIsViewingAvailability(false);
+                  setSelectedRoomTypeId(null);
+                  setRoomTypeDailyBookings({});
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
 
-                  {/* Room Type Dropdown */}
-                  <div className="mb-6">
-                    <select
-                      className="w-full p-2 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded"
-                      value={selectedRoomTypeId || ''}
-                      onChange={(e) => {
-                        const roomId = e.target.value;
-                        setSelectedRoomTypeId(roomId);
-                        const selectedRoom = availableRoomTypes.find(room => room.roomTypeId === roomId);
-                        setRoomTypeDailyBookings(selectedRoom?.dailyBookings || {});
-                      
-                        console.log('Selected Room Type ID:', roomId);
-                        console.log('Updated Room Type Daily Bookings:', selectedRoom?.dailyBookings);
-                      }}
-                    >
-                      <option value="">Select Room Type</option>
-                      {availableRoomTypes.map((room) => (
-                        <option key={room.roomTypeId} value={room.roomTypeId}>
-                          {room.roomTypeDetails.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            {/* Room Type Dropdown */}
+            <div className="mb-6">
+              <select
+                className="w-full p-2 bg-[#2A2A2A] text-[#C9A55C] border border-[#C9A55C] rounded"
+                value={selectedRoomTypeId || ''}
+                onChange={(e) => {
+                  const roomId = e.target.value;
+                  setSelectedRoomTypeId(roomId);
 
-                  {/* Month Selection */}
-                  <div className="flex justify-between mb-4">
-                    <button
-                      onClick={() => handleChangeMonth('prev')}
-                      className="bg-[#2A2A2A] text-[#C9A55C] p-2 rounded hover:bg-[#C9A55C] hover:text-white"
-                    >
-                      Previous Month
-                    </button>
-                    <span className="text-[#C9A55C] text-lg">{calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
-                    <button
-                      onClick={() => handleChangeMonth('next')}
-                      className="bg-[#2A2A2A] text-[#C9A55C] p-2 rounded hover:bg-[#C9A55C] hover:text-white"
-                    >
-                      Next Month
-                    </button>
-                  </div>
+                  const selectedRoom = availableRoomTypes.find(room => room.roomTypeId === roomId);
 
-                  {/* Calendar */}
-                  {selectedRoomTypeId ? (
-                    <div>
-                      <CalendarAvailability month={calendarMonth} availability={roomTypeDailyBookings} />
-                    </div>
-                  ) : (
-                    <p className="text-center text-gray-500">Please select a room type to view availability.</p>
-                  )}
-                </div>
+                  if (selectedRoom) {
+                    const autoFillDailyBookings: { [date: string]: number } = {};
+                    const firstDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+                    const lastDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
+
+                    for (let d = new Date(firstDayOfMonth); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
+                      const dateStr = d.toISOString().split('T')[0];
+
+                      if (selectedRoom.dailyBookings && dateStr in selectedRoom.dailyBookings) {
+                        autoFillDailyBookings[dateStr] = (selectedRoom.totalRooms - selectedRoom.dailyBookings[dateStr]);
+                      } else {
+                        autoFillDailyBookings[dateStr] = selectedRoom.totalRooms;
+                      }
+                    }
+
+                    setRoomTypeDailyBookings(autoFillDailyBookings);
+                  } else {
+                    setRoomTypeDailyBookings({});
+                  }
+                }}
+              >
+                <option value="">Select Room Type</option>
+                {availableRoomTypes.map((room) => (
+                  <option key={room.roomTypeId} value={room.roomTypeId}>
+                    {room.roomTypeDetails.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Month Selection */}
+            <div className="flex justify-between mb-4">
+              <button
+                onClick={() => handleChangeMonth('prev')}
+                className="bg-[#2A2A2A] text-[#C9A55C] p-2 rounded hover:bg-[#C9A55C] hover:text-white"
+              >
+                Previous Month
+              </button>
+              <span className="text-[#C9A55C] text-lg">{calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+              <button
+                onClick={() => handleChangeMonth('next')}
+                className="bg-[#2A2A2A] text-[#C9A55C] p-2 rounded hover:bg-[#C9A55C] hover:text-white"
+              >
+                Next Month
+              </button>
+            </div>
+
+            {/* Calendar */}
+            {selectedRoomTypeId ? (
+              <div>
+                <CalendarAvailability month={calendarMonth} availability={roomTypeDailyBookings} />
               </div>
+            ) : (
+              <p className="text-center text-gray-500">Please select a room type to view availability.</p>
             )}
+          </div>
+        </div>
+      )}
 
       {isAddingRoomType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -1833,8 +1853,8 @@ export default function HotelManagement() {
                   <label className="block mb-1 text-sm text-gray-400">Is Available</label>
                   <select
                     className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white focus:border-[#C9A55C] focus:outline-none"
-                    value={roomTypeFormData.isAvailable ? "true" : "false"}
-                    onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, isAvailable: e.target.value === "true" })}
+                    value={roomTypeFormData.isActivated ? "true" : "false"}
+                    onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, isActivated: e.target.value === "true" })}
                   >
                     <option value="true">Available</option>
                     <option value="false">Not Available</option>
@@ -2046,8 +2066,8 @@ export default function HotelManagement() {
                 <label className="block text-sm text-gray-400 mb-1">Is Available</label>
                 <select
                   className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
-                  value={roomTypeEditingFormData.isAvailable ? "true" : "false"}
-                  onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, isAvailable: e.target.value === "true" })}
+                  value={roomTypeEditingFormData.isActivated ? "true" : "false"}
+                  onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, isActivated: e.target.value === "true" })}
                 >
                   <option value="true">Available</option>
                   <option value="false">Not Available</option>

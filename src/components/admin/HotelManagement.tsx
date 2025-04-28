@@ -92,7 +92,7 @@ export default function HotelManagement() {
     currency: 'THB',
     totalRooms: 1,
     nonAvailableRooms: 0,
-    isAvailable: true,
+    isActivated: true,
   });
   const [isEditingRoomType, setIsEditingRoomType] = useState(false);
   const [editingRoomType, setEditingRoomType] = useState<RoomType | null>(null);
@@ -416,7 +416,7 @@ export default function HotelManagement() {
       currency: roomTypeFormData.currency,
       totalRooms: roomTypeFormData.totalRooms,
       nonAvailableRooms: roomTypeFormData.nonAvailableRooms,
-      isAvailable: roomTypeFormData.isAvailable,
+      isActivated: roomTypeFormData.isActivated,
     };
 
     console.log('Payload ที่ส่งไป:', payload);
@@ -456,7 +456,7 @@ export default function HotelManagement() {
         currency: 'THB',
         totalRooms: 0,
         nonAvailableRooms: 0,
-        isAvailable: true,
+        isActivated: true,
       });
 
       console.log('Room type created successfully');
@@ -482,7 +482,7 @@ export default function HotelManagement() {
       currency: room.currency,
       totalRooms: room.totalRooms,
       nonAvailableRooms: room.nonAvailableRooms,
-      isAvailable: room.isAvailable,
+      isActivated: room.isActivated,
     });
   };
 
@@ -506,7 +506,7 @@ export default function HotelManagement() {
         currency: roomTypeEditingFormData.currency,
         totalRooms: roomTypeEditingFormData.totalRooms,
         nonAvailableRooms: roomTypeEditingFormData.nonAvailableRooms,
-        isAvailable: roomTypeEditingFormData.isAvailable,
+        isActivated: roomTypeEditingFormData.isActivated,
       };
 
       const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${editingRoomType._id}`, {
@@ -556,7 +556,7 @@ export default function HotelManagement() {
         currency: room.currency,
         totalRooms: room.totalRooms,
         nonAvailableRooms: room.nonAvailableRooms,
-        isAvailable: false,
+        isActivated: false,
       };
 
       const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${room._id}`, {
@@ -597,7 +597,7 @@ export default function HotelManagement() {
         currency: room.currency,
         totalRooms: room.totalRooms,
         nonAvailableRooms: room.nonAvailableRooms,
-        isAvailable: true,
+        isActivated: true,
       };
 
       const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${room._id}`, {
@@ -852,7 +852,7 @@ export default function HotelManagement() {
       currency: 'THB',
       totalRooms: 0,
       nonAvailableRooms: 0,
-      isAvailable: true,
+      isActivated: true,
     });
   };
 
@@ -1428,7 +1428,7 @@ export default function HotelManagement() {
                   <div
                     key={room._id}
                     className={`border rounded-lg p-4 transition-colors
-    ${room.isAvailable
+    ${room.isActivated
                         ? 'border-[#333333] bg-[#1A1A1A] hover:bg-[#2A2A2A]'
                         : 'border-gray-700 bg-gray-800 opacity-60'}`}
                   >
@@ -1445,8 +1445,8 @@ export default function HotelManagement() {
                         <p className="text-sm text-gray-400">
                           Facilities: {room.facilities.join(', ')}
                         </p>
-                        <p className={`text-sm ${room.isAvailable ? 'text-green-500' : 'text-red-500'}`}>
-                          {room.isAvailable ? 'Available' : 'Deactivated'}
+                        <p className={`text-sm ${room.isActivated ? 'text-green-500' : 'text-red-500'}`}>
+                          {room.isActivated ? 'Available' : 'Deactivated'}
                         </p>
                       </div>
 
@@ -1457,7 +1457,7 @@ export default function HotelManagement() {
                         </p>
 
                         <div className="mt-2 space-x-2">
-                          {room.isAvailable ? (
+                          {room.isActivated ? (
                             <>
                               <button
                                 onClick={() => handleEditRoomType(room)}
@@ -1639,8 +1639,8 @@ export default function HotelManagement() {
                   <label className="block mb-1 text-sm text-gray-400">Is Available</label>
                   <select
                     className="w-full rounded border border-[#333] bg-[#1A1A1A] p-2 text-white focus:border-[#C9A55C] focus:outline-none"
-                    value={roomTypeFormData.isAvailable ? "true" : "false"}
-                    onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, isAvailable: e.target.value === "true" })}
+                    value={roomTypeFormData.isActivated ? "true" : "false"}
+                    onChange={(e) => setRoomTypeFormData({ ...roomTypeFormData, isActivated: e.target.value === "true" })}
                   >
                     <option value="true">Available</option>
                     <option value="false">Not Available</option>
@@ -1855,8 +1855,8 @@ export default function HotelManagement() {
                 <label className="block text-sm text-gray-400 mb-1">Is Available</label>
                 <select
                   className="w-full p-2 rounded bg-[#2A2A2A] border border-[#333] text-white"
-                  value={roomTypeEditingFormData.isAvailable ? "true" : "false"}
-                  onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, isAvailable: e.target.value === "true" })}
+                  value={roomTypeEditingFormData.isActivated ? "true" : "false"}
+                  onChange={(e) => setRoomTypeEditingFormData({ ...roomTypeEditingFormData, isActivated: e.target.value === "true" })}
                 >
                   <option value="true">Available</option>
                   <option value="false">Not Available</option>

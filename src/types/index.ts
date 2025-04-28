@@ -43,7 +43,7 @@ export interface RoomType {
   currency: string;
   totalRooms: number;
   nonAvailableRooms: number;
-  isAvailable: boolean;
+  isActivated: boolean;
   createdAt: Date;
   updatedAt: Date;
   __v: number;
@@ -78,7 +78,7 @@ export interface RoomTypeFormData {
   currency: string;
   totalRooms: number;
   nonAvailableRooms: number;
-  isAvailable: boolean;
+  isActivated: boolean;
 }
 
 export interface AvailableRoomType {
@@ -86,7 +86,7 @@ export interface AvailableRoomType {
   totalRooms: number;
   bookedRooms: number;
   availableRooms: number;
-  isAvailable: boolean;
+  isActivated: boolean;
   roomTypeDetails: {
     name: string;
     capacity: number;
