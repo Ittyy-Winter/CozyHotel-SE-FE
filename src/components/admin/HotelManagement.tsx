@@ -1336,7 +1336,6 @@ export default function HotelManagement() {
                       className="w-full p-2 bg-[#1A1A1A] border border-[#333333] rounded text-white placeholder:text-gray-500 focus:border-[#C9A55C] focus:outline-none"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      required
                     />
                   </div>
                   <div className="flex space-x-4">
