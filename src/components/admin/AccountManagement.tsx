@@ -154,7 +154,7 @@ export default function AccountManagement() {
     if (!session?.user?.token) return;
     try {
       setIsEditingRoleManager(false);
-      
+
       await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/accounts/${pendingRoleChangeUserId}`, {
         method: 'PUT',
         headers: {
@@ -428,6 +428,18 @@ export default function AccountManagement() {
                 >
                   Make User
                 </button>
+                {user.role === "manager" && (
+                  <button
+                    onClick={() => {
+                      setSelectedHotels(user.managedHotels || []);
+                      setPendingRoleChangeUserId(user._id);
+                      setIsEditingRoleManager(true);
+                    }}
+                    className="px-3 py-1 bg-[#2A2A2A] text-blue-400 border border-blue-400 rounded hover:bg-blue-400 hover:text-white transition-colors"
+                  >
+                    Edit Hotels
+                  </button>
+                )}
                 <button
                   onClick={() => handleDeleteUser(user._id)}
                   className="px-3 py-1 bg-red-900/20 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white transition-colors"
@@ -595,7 +607,7 @@ export default function AccountManagement() {
                   type="submit"
                   className="flex items-center space-x-2 rounded bg-[#C9A55C] px-4 py-2 text-white transition-colors hover:bg-[#B38B4A] disabled:opacity-50"
                 >
-                  Add Manager
+                  Save Changes
                 </button>
               </div>
             </form>
