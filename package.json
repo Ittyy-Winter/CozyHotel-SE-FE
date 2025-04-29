@@ -25,6 +25,7 @@
     "react-select": "^5.10.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^16.0.1",
