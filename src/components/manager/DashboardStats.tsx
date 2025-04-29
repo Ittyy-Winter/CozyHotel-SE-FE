@@ -32,23 +32,17 @@ export default function DashboardStats() {
       const bookingsResults = await Promise.all(bookingsPromises);
       console.log('Bookings Results:', bookingsResults);
   
-      const today = new Date();
-  
-      const totalActiveBookings = bookingsResults.reduce((acc, bookingsData) => {
+      // Now we simply count all bookings, no filtering
+      const totalBookings = bookingsResults.reduce((acc, bookingsData) => {
         if (!bookingsData.data) return acc;
-        const activeBookings = bookingsData.data.filter((booking: any) => {
-          const checkin = new Date(booking.checkinDate);
-          const checkout = new Date(booking.checkoutDate);
-          return today >= checkin && today <= checkout;
-        });
-        return acc + activeBookings.length;
+        return acc + bookingsData.data.length;
       }, 0);
   
-      console.log("Active Booking : ", totalActiveBookings);
+      console.log("Total Bookings: ", totalBookings);
   
       setStats({
         totalHotels: hotels.length,
-        activeBookings: totalActiveBookings,
+        activeBookings: totalBookings, // you can rename `activeBookings` to `totalBookings` if you want
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -56,6 +50,7 @@ export default function DashboardStats() {
       setIsLoading(false);
     }
   };
+  
   
 
   if (isLoading) {
