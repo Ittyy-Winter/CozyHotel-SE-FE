@@ -11,7 +11,7 @@ export default async function getBookingsManager(
   if (limit !== undefined) params.append('limit', limit.toString());
 
   const url = `${API_ENDPOINTS.MANAGER.BOOKINGS(hotelId)}`;
-  const fullUrl = params.toString() ? `${url}&${params.toString()}` : url;
+  const fullUrl = params.toString() ? `${url}?${params.toString()}` : url; // <-- fixed here!
 
   const response = await fetch(fullUrl, {
     method: 'GET',
