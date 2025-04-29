@@ -80,4 +80,10 @@ export const API_ENDPOINTS = {
         ? `/api/proxy-booking/${bookingId}`
         : `${API_BASE_URL}/api/v1/bookings/${bookingId}`,
   },
+ MANAGER: {
+  BOOKINGS: (hotelId: string) =>
+    process.env.NODE_ENV === "development"
+      ? `/api/proxy-manager-booking?hotelId=${hotelId}`
+      : `${API_BASE_URL}/api/v1/manager/hotels/${hotelId}/bookings`,
+}
 };

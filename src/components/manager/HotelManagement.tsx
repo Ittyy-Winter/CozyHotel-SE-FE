@@ -4,11 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import getManagerHotels from '@/libs/hotel/getManagerHotels';
 import createHotel from '@/libs/hotel/createHotel';
-import editHotel from '@/libs/hotel/updateHotel';
+import updateHotelManager from '@/libs/hotel/updateHotelManager';
 import deleteHotel from '@/libs/hotel/deleteHotel';
-import getBookingsByHotel from '@/libs/booking/getBookingsByHotel';
+import getBookingsManager from '@/libs/booking/getBookingsManager';
 import getRoomTypesByHotel from '@/libs/roomtype/getRoomTypesByHotel'
-import editBooking from '@/libs/booking/editBooking';
+import updateBookingManager from '@/libs/booking/updateBookingManager';
 import { Hotel, HotelUpdate, Booking, RoomType, RoomTypeFormData, AvailableRoomType } from '@/types';
 import LoadingSpinner from './LoadingSpinner';
 import SearchBar from '../SearchBar';
@@ -323,7 +323,7 @@ export default function HotelManagement() {
       };
 
       if (editState.isEditing && editState.editingId) {
-        await editHotel(editState.editingId, hotelData, session.user.token);
+        await updateHotelManager(editState.editingId, hotelData, session.user.token);
         setShowHotelSuccessMessage(true);
         setTimeout(() => setShowHotelSuccessMessage(false), 3000);
       } else {
@@ -400,11 +400,11 @@ export default function HotelManagement() {
     setSelectedHotel(hotels.find(h => h._id === hotelId) || null);
     try {
       // Fetch all bookings for searching
-      const allBookingsResponse = await getBookingsByHotel(hotelId, session.user.token, 1, 1000);
+      const allBookingsResponse = await getBookingsManager(hotelId, session.user.token, 1, 1000);
       setAllBookings(allBookingsResponse.data);
 
       // Fetch paginated bookings for display
-      const response = await getBookingsByHotel(hotelId, session.user.token, bookingPage, bookingsPerPage);
+      const response = await getBookingsManager(hotelId, session.user.token, bookingPage, bookingsPerPage);
       setSelectedHotelBookings(response.data);
       setTotalBookings(response.count);
       setIsViewingBookings(true);
@@ -450,7 +450,7 @@ export default function HotelManagement() {
     if (!selectedHotel || !session?.user?.token) return;
     setBookingsLoading(true);
     try {
-      const response = await getBookingsByHotel(selectedHotel._id, session.user.token, newPage, bookingsPerPage);
+      const response = await getBookingsManager(selectedHotel._id, session.user.token, newPage, bookingsPerPage);
       setSelectedHotelBookings(response.data);
       setTotalBookings(response.count);
       setBookingPage(newPage);
@@ -527,7 +527,7 @@ export default function HotelManagement() {
   const handleSubmitRoomType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user?.token || !selectedHotel) return;
-
+  
     const payload = {
       hotelId: selectedHotel._id,
       name: roomTypeFormData.name,
@@ -544,29 +544,32 @@ export default function HotelManagement() {
       nonAvailableRooms: roomTypeFormData.nonAvailableRooms,
       isActivated: roomTypeFormData.isActivated,
     };
-
+  
     console.log('Payload ที่ส่งไป:', payload);
-
+  
     try {
-      const response = await fetch('https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.user.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
+      const response = await fetch(
+        `https://cozy-hotel-se-be.vercel.app/api/v1/manager/hotels/${selectedHotel._id}/roomtypes`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.user.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+  
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Server response error:', errorData);
         throw new Error('Failed to create room type');
       }
-
+  
       const updatedRoomTypes = await getRoomTypesByHotel(selectedHotel._id, session.user.token, 1, 1000);
       setSelectedRoomType(updatedRoomTypes.data);
       setAllBookings(updatedRoomTypes.data);
-
+  
       setIsAddingRoomType(false);
       setRoomTypeFormData({
         name: '',
@@ -583,7 +586,7 @@ export default function HotelManagement() {
         nonAvailableRooms: 0,
         isActivated: true,
       });
-
+  
       console.log('Room type created successfully');
     } catch (error) {
       console.error('Error creating room type:', error);
@@ -634,7 +637,7 @@ export default function HotelManagement() {
         isActivated: roomTypeEditingFormData.isActivated,
       };
 
-      const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${editingRoomType._id}`, {
+      const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/manager/roomtypes/${editingRoomType._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.user.token}`,
@@ -684,7 +687,7 @@ export default function HotelManagement() {
         isActivated: false,
       };
 
-      const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${room._id}`, {
+      const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/manager/roomtypes/${room._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.user.token}`,
@@ -725,7 +728,7 @@ export default function HotelManagement() {
         isActivated: true,
       };
 
-      const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${room._id}`, {
+      const response = await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/manager/roomtypes/${room._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.user.token}`,
@@ -749,7 +752,7 @@ export default function HotelManagement() {
     if (!session?.user?.token) return;
 
     try {
-      await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/roomtypes/${roomId}`, {
+      await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/manager/roomtypes/${roomId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.user.token}`,
@@ -871,7 +874,7 @@ export default function HotelManagement() {
 
     setIsDeletingBooking(true);
     try {
-      await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/bookings/${bookingToDelete._id}`, {
+      await fetch(`https://cozy-hotel-se-be.vercel.app/api/v1/manager/bookings/${bookingToDelete._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.user.token}`,
@@ -880,12 +883,12 @@ export default function HotelManagement() {
       });
 
       // Refresh bookings after deletion
-      const response = await getBookingsByHotel(selectedHotel._id, session.user.token, bookingPage, bookingsPerPage);
+      const response = await getBookingsManager(selectedHotel._id, session.user.token, bookingPage, bookingsPerPage);
       setSelectedHotelBookings(response.data);
       setTotalBookings(response.count);
 
       // Also refresh all bookings for search
-      const allBookingsResponse = await getBookingsByHotel(selectedHotel._id, session.user.token, 1, 1000);
+      const allBookingsResponse = await getBookingsManager(selectedHotel._id, session.user.token, 1, 1000);
       setAllBookings(allBookingsResponse.data);
 
       // Show success message
@@ -916,22 +919,27 @@ export default function HotelManagement() {
 
     setIsUpdatingBooking(true);
     try {
-      await editBooking(
+      // Utility function to format Date object to "YYYY-MM-DD" format
+      const formatDate = (date: Date): string => {
+        return date.toISOString().split('T')[0]; // Extract the "YYYY-MM-DD" part
+      };
+
+      await updateBookingManager(
         editingBooking._id,
         {
-          checkinDate: new Date(bookingFormData.checkinDate),
-          checkoutDate: new Date(bookingFormData.checkoutDate),
+          checkinDate: formatDate(new Date(bookingFormData.checkinDate)),
+          checkoutDate: formatDate(new Date(bookingFormData.checkoutDate)),
         },
         session.user.token
       );
 
       // Refresh bookings after update
-      const response = await getBookingsByHotel(selectedHotel._id, session.user.token, bookingPage, bookingsPerPage);
+      const response = await getBookingsManager(selectedHotel._id, session.user.token, bookingPage, bookingsPerPage);
       setSelectedHotelBookings(response.data);
       setTotalBookings(response.count);
 
       // Also refresh all bookings for search
-      const allBookingsResponse = await getBookingsByHotel(selectedHotel._id, session.user.token, 1, 1000);
+      const allBookingsResponse = await getBookingsManager(selectedHotel._id, session.user.token, 1, 1000);
       setAllBookings(allBookingsResponse.data);
 
       setIsEditingBooking(false);
@@ -1166,13 +1174,6 @@ export default function HotelManagement() {
                     hover:bg-[#C9A55C] hover:text-white transition-colors"
                 >
                   Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(hotel._id)}
-                  className="px-3 py-1 bg-red-900/20 text-red-500 border border-red-500 rounded 
-                    hover:bg-red-500 hover:text-white transition-colors"
-                >
-                  Delete
                 </button>
               </div>
             </div>

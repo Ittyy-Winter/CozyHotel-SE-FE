@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import getManagerHotels from "@/libs/hotel/getManagerHotels";
-import getBookingsByHotel from "@/libs/booking/getBookingsByHotel";
+import getBookingsManager from "@/libs/booking/getBookingsManager";
 import LoadingSpinner from './LoadingSpinner';
 
 export default function DashboardStats() {
@@ -23,18 +23,29 @@ export default function DashboardStats() {
     try {
       const hotelsData = await getManagerHotels(session.user.token);
       console.log('HOTELS DATA:', hotelsData);
-      const hotels = hotelsData.data || []; // adjust depending on your API response
-
-      const bookingsPromises = hotels.map((hotel: { id: string }) =>
-        getBookingsByHotel(hotel.id, session.user.token)
+      const hotels = hotelsData.data || [];
+  
+      const bookingsPromises = hotels.map((hotel: { id: string, _id: string }) =>
+        getBookingsManager(hotel._id || hotel.id, session.user.token)
       );
-
+  
       const bookingsResults = await Promise.all(bookingsPromises);
-
+      console.log('Bookings Results:', bookingsResults);
+  
+      const today = new Date();
+  
       const totalActiveBookings = bookingsResults.reduce((acc, bookingsData) => {
-        return acc + (bookingsData.count || 0);
+        if (!bookingsData.data) return acc;
+        const activeBookings = bookingsData.data.filter((booking: any) => {
+          const checkin = new Date(booking.checkinDate);
+          const checkout = new Date(booking.checkoutDate);
+          return today >= checkin && today <= checkout;
+        });
+        return acc + activeBookings.length;
       }, 0);
-
+  
+      console.log("Active Booking : ", totalActiveBookings);
+  
       setStats({
         totalHotels: hotels.length,
         activeBookings: totalActiveBookings,
@@ -45,6 +56,7 @@ export default function DashboardStats() {
       setIsLoading(false);
     }
   };
+  
 
   if (isLoading) {
     return <LoadingSpinner />;
