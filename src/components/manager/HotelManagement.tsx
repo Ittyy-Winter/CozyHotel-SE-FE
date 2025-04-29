@@ -107,6 +107,7 @@ export default function HotelManagement() {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [roomTypeDailyBookings, setRoomTypeDailyBookings] = useState<{ [date: string]: number }>({});
   const [hotelId, setHotelId] = useState<string>('');
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   const CalendarAvailability = ({
     month,
@@ -158,8 +159,13 @@ export default function HotelManagement() {
 
     console.log('Changed Month:', newMonth.toLocaleString('default', { month: 'long', year: 'numeric' }));
 
-    fetchRoomAvailabilityForMonth(hotelId, newMonth);
+    setAvailabilityLoading(true);
+    fetchRoomAvailabilityForMonth(hotelId, newMonth)
+      .finally(() => {
+        setAvailabilityLoading(false);
+      });
   };
+
 
   const fetchRoomAvailabilityForMonth = async (hotelId: string, month: Date) => {
     if (!session?.user?.token) return;
@@ -189,7 +195,8 @@ export default function HotelManagement() {
             const dateStr = d.toISOString().split('T')[0];
 
             if (selectedRoom.dailyBookings && dateStr in selectedRoom.dailyBookings) {
-              autoFillDailyBookings[dateStr] = (selectedRoom.totalRooms - selectedRoom.dailyBookings[dateStr]);
+              const remaining = selectedRoom.totalRooms - selectedRoom.dailyBookings[dateStr];
+              autoFillDailyBookings[dateStr] = remaining < 0 ? 0 : remaining;
             } else {
               autoFillDailyBookings[dateStr] = selectedRoom.totalRooms;
             }
@@ -387,12 +394,14 @@ export default function HotelManagement() {
 
   const handleViewRoomAvailability = async (hotelId: string) => {
     setHotelId(hotelId);
+    setSelectedRoomTypeId(null);
+    setRoomTypeDailyBookings({});
+    setCalendarMonth(new Date());
 
     if (!session?.user?.token) return;
-
-    const today = new Date();
-    fetchRoomAvailabilityForMonth(hotelId, today);
+    fetchRoomAvailabilityForMonth(hotelId, new Date());
   };
+
 
   const handleViewBookings = async (hotelId: string) => {
     if (!session?.user?.token) return;
@@ -527,7 +536,7 @@ export default function HotelManagement() {
   const handleSubmitRoomType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user?.token || !selectedHotel) return;
-  
+
     const payload = {
       hotelId: selectedHotel._id,
       name: roomTypeFormData.name,
@@ -544,9 +553,9 @@ export default function HotelManagement() {
       nonAvailableRooms: roomTypeFormData.nonAvailableRooms,
       isActivated: roomTypeFormData.isActivated,
     };
-  
+
     console.log('Payload ที่ส่งไป:', payload);
-  
+
     try {
       const response = await fetch(
         `https://cozy-hotel-se-be.vercel.app/api/v1/manager/hotels/${selectedHotel._id}/roomtypes`,
@@ -559,17 +568,17 @@ export default function HotelManagement() {
           body: JSON.stringify(payload),
         }
       );
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Server response error:', errorData);
         throw new Error('Failed to create room type');
       }
-  
+
       const updatedRoomTypes = await getRoomTypesByHotel(selectedHotel._id, session.user.token, 1, 1000);
       setSelectedRoomType(updatedRoomTypes.data);
       setAllBookings(updatedRoomTypes.data);
-  
+
       setIsAddingRoomType(false);
       setRoomTypeFormData({
         name: '',
@@ -586,7 +595,7 @@ export default function HotelManagement() {
         nonAvailableRooms: 0,
         isActivated: true,
       });
-  
+
       console.log('Room type created successfully');
     } catch (error) {
       console.error('Error creating room type:', error);
@@ -1672,7 +1681,8 @@ export default function HotelManagement() {
                       const dateStr = d.toISOString().split('T')[0];
 
                       if (selectedRoom.dailyBookings && dateStr in selectedRoom.dailyBookings) {
-                        autoFillDailyBookings[dateStr] = (selectedRoom.totalRooms - selectedRoom.dailyBookings[dateStr]);
+                        const remaining = selectedRoom.totalRooms - selectedRoom.dailyBookings[dateStr];
+                        autoFillDailyBookings[dateStr] = remaining < 0 ? 0 : remaining;
                       } else {
                         autoFillDailyBookings[dateStr] = selectedRoom.totalRooms;
                       }
@@ -1711,13 +1721,16 @@ export default function HotelManagement() {
             </div>
 
             {/* Calendar */}
-            {selectedRoomTypeId ? (
+            {availabilityLoading ? (
+              <LoadingSpinner />
+            ) : selectedRoomTypeId ? (
               <div>
                 <CalendarAvailability month={calendarMonth} availability={roomTypeDailyBookings} />
               </div>
             ) : (
               <p className="text-center text-gray-500">Please select a room type to view availability.</p>
             )}
+
           </div>
         </div>
       )}
